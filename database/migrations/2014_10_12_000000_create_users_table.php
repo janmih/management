@@ -17,7 +17,14 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('role')->default('user');
+            $table->unsignedBigInteger('service_id')->nullable()->after('role');
+            $table->foreign('service_id')->references('id_service')->on('services');
             $table->rememberToken();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->unsignedBigInteger('deleted_by')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

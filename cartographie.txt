@@ -1,0 +1,64 @@
+interface mampiseo ny liste article hangatahana
+table etat de stock no ampesaina
+ok
+designation article | stock final | quantity | action (boutton demander)
+Cahier 30 2 boutton demander
+Cahier 30 2 boutton demander
+Cahier 30 2 boutton demander
+Cahier 30 2 boutton demander
+Cahier 30 2 boutton demander
+
+
+demande_article:
+id_demande
+demande_id
+personnel_id
+article_id
+quantity
+status
+send_notification
+
+table demande_article
+id_demande | demande_id | personnel_id | article_id | quantity | status_validation | status_envoyer
+1 1 1 1 2 EN ATTENTE
+2 1 1 3 2 EN ATTENTE
+3 1 1 5 2 EN ATTENTE
+4 1 1 7 2 EN ATTENTE
+5 1 1 10 2 EN ATTENTE ok
+6 2 1 1 2 EN ATTENTE
+7 2 1 3 2 EN ATTENTE ok
+
+
+
+
+Tableau demande en cours :
+Personne par service qui a un status en attente
+Nom prenom | action (boutton voir les demandes)
+Rakoto lita voir
+Rakoto lita voir
+
+
+Taleau voir liste des demandes par personne:
+manao interraction amin'ny table sortie
+
+designation article | stock final | quantity | action (boutton demander)
+Cahier 30 2 boutton valider \ boutton refuser
+Cahier 30 2 boutton valider \ boutton refuser
+Cahier 30 2 boutton valider \ boutton refuser
+Cahier 30 2 boutton valider \ boutton refuser
+Cahier 30 2 boutton valider \ boutton refuser
+
+
+Table livraison:
+article_id
+quantity
+status_validation
+status_livraison
+
+Tableau liste des demande accepter par personne par service:
+designation article | quantity | status | livre | actions (boutton livreé)
+Cahier 2 accepter \ refuser non \ oui livrer
+Cahier 2 accepter \ refuser
+Cahier 2 accepter \ refuser
+Cahier 2 accepter \ refuser
+Cahier 2 accepter \ refuser
