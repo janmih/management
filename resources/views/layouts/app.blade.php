@@ -66,7 +66,7 @@
         <aside class="main-sidebar sidebar-dark-warning elevation-4">
             <!-- Brand Logo -->
             <a href="{{ route('home') }}" class="brand-link">
-                <img src="{{ asset('images/CACSU.png') }}" id="logo" alt="AdminLTE Logo"
+                <img src="{{ asset('images/CACSU.png') }}" id="logo" alt="CACSU Logo"
                     class="brand-image img-circle elevation-3" style="opacity: .8">
                 <h3 class="brand-text font-weight-bold" style="color: #F5EDCE">CACSU</h3>
             </a>
