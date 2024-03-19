@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PersonnelRequest;
+use App\Http\Requests\PersonnelUpdateRequest;
 use App\Models\Personnel;
 use App\Models\Service;
 use Illuminate\Http\Request;
@@ -82,7 +83,7 @@ class PersonnelController extends Controller
      * @param  Personnel  $personnel
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(PersonnelRequest $request, Personnel $personnel)
+    public function update(PersonnelUpdateRequest $request, Personnel $personnel)
     {
         try {
             // Mettre à jour le personnel avec les données du formulaire

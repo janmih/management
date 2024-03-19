@@ -31,7 +31,7 @@ class HeloMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Helo Mail',
+            subject: 'Demande articles approuvés',
         );
     }
 

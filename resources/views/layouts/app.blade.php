@@ -18,10 +18,12 @@
     <link rel="stylesheet" href="{{ asset('css/buttons.dataTables.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dataTables.bootstrap5.min.css') }}">
     <!-- Inclure le CSS de DataTables Responsive -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     @yield('styles')
 </head>
 
-<body class="hold-transition sidebar-mini">
+<body class="hold-transition sidebar-mini text-sm">
+    <div class="loading"></div>
     <div class="wrapper">
 
         <!-- Navbar -->
@@ -61,7 +63,7 @@
         <!-- /.navbar -->
 
         <!-- Main Sidebar Container -->
-        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <aside class="main-sidebar sidebar-dark-warning elevation-4">
             <!-- Brand Logo -->
             <a href="{{ route('home') }}" class="brand-link">
                 <img src="{{ asset('images/CACSU.png') }}" id="logo" alt="AdminLTE Logo"
@@ -122,6 +124,9 @@
     <!-- Exemple d'inclusion de la bibliothèque Pusher dans une vue Laravel -->
     <script src="{{ asset('js/all.min.js') }}"></script>
     <!-- Inclure le JavaScript de DataTables Responsive -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+
     @yield('scripts')
 </body>
 

@@ -1,5 +1,7 @@
 @extends('layouts.app') {{-- Assurez-vous d'avoir une vue de mise en page (layout) appropriée --}}
-
+@section('styles')
+    <link rel="stylesheet" href="{{ asset('css/loader.css') }}">
+@endsection
 @section('content')
     <section class="content-header">
         <div class="container-fluid">
@@ -292,8 +294,11 @@
         }
 
         let notify = () => {
+            $(".loading").css('display', "block")
             axios.get('/notify')
+
                 .then(response => {
+                    $(".loading").css('display', "none")
                     Swal.fire({
                         icon: 'success',
                         title: response.data.message,

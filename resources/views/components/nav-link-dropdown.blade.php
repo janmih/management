@@ -1,5 +1,5 @@
 <li class="nav-item @if (in_array(Request::url(), $route)) menu-is-opening menu-open @endif">
-    <a href="#" class="nav-link">
+    <a href="#" class="nav-link @if (in_array(Request::url(), $route)) active @endif ">
         <i class="nav-icon {{ $icon }}" style="color: {{ $color }}"></i>
         <p>
             {{ $title }}

@@ -11,6 +11,7 @@ use App\Models\DemandeArticle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\AjouterRequest;
+use App\Jobs\SendEmailNotificationJob;
 use Illuminate\Support\Facades\Route;
 
 class DemandeArticleController extends Controller
@@ -89,7 +90,7 @@ class DemandeArticleController extends Controller
                     return $row->nom . ' ' . $row->prenom;
                 })
                 ->addColumn('actions', function ($row) {
-                    return '<button class="btn btn-success btn-sm" onclick="voir(' . $row->id . ')"><i class="fas fa-circle-check"></i></button>';
+                    return '<button class="btn btn-default btn-sm" onclick="voir(' . $row->id . ')"><i class="fas fa-eye"></i></button>';
                 })
                 ->rawColumns(['actions', 'quantity'])
                 ->make(true);
@@ -166,6 +167,9 @@ class DemandeArticleController extends Controller
         return response()->json(['success' => true, "message" => "Demande refuser"]);
     }
 
+    /**
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function notify()
     {
         $listMaterielValider = DemandeArticle::where('status', 'Valider')
@@ -176,8 +180,7 @@ class DemandeArticleController extends Controller
             ->where('livrer', 'Non')
             ->get();
         // dd($listMaterielValider);
-        Mail::to(['cacsu.mg@gmail.com'])
-            ->send(new HeloMail($listMaterielValider, $listMaterielValider->count()));
+        SendEmailNotificationJob::dispatch($listMaterielValider);
         return response()->json(['success' => true, "message" => "Notification envoyer"]);
     }
 }
