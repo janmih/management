@@ -71,4 +71,9 @@ class Personnel extends Model
     {
         return $this->hasOne(User::class);
     }
+
+    public function getFullNameAttribute(): String
+    {
+        return $this->nom . ' ' . $this->prenom;
+    }
 }

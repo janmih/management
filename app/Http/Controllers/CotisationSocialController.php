@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Personnel;
+use App\Mail\CotisationMail;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Models\CotisationSocial;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 class CotisationSocialController extends Controller
@@ -19,6 +21,7 @@ class CotisationSocialController extends Controller
         if ($request->ajax()) {
             // Récupère tous les services depuis la base de données
             $cotisationSocial = CotisationSocial::with('mission');
+            // $cotisationSocial = CotisationSocial::with('mission');
 
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($cotisationSocial)
@@ -31,11 +34,12 @@ class CotisationSocialController extends Controller
                 })
                 ->addColumn('mission_id', function ($row) {
                     if ($row->mission && $row->mission->observation) {
-                        return $row->mission->observation;
+                        $dd = date('d-m-Y', strtotime($row->mission->date_debut));
+                        $df = date('d-m-Y', strtotime($row->mission->date_fin));
+                        return $row->mission->observation . PHP_EOL . " du " . $dd . " au " . $df;
                     } else {
                         return '';
                     }
-                    return $row->mission->observation;
                 })
                 ->addColumn('action', function ($cotisation) {
                     if ($cotisation->status !== 'payé') {
@@ -53,8 +57,8 @@ class CotisationSocialController extends Controller
         $segments = explode('.', $routeName);
         $mainSegment = $segments[0];
         // Si ce n'est pas une requête AJAX, renvoie la vue pour l'affichage normal
-        $totalNonPaye = CotisationSocial::where('status', '<>', 'payé')->sum('montant');
-        return view('cotisation-socials.index', compact('mainSegment', 'totalNonPaye'));
+        $totalPaye = CotisationSocial::where('status', '=', 'payé')->sum('montant');
+        return view('cotisation-socials.index', compact('mainSegment', 'totalPaye'));
     }
 
     /**
@@ -69,11 +73,16 @@ class CotisationSocialController extends Controller
         try {
             // Vérifier si la cotisation n'est pas déjà payée
             if ($cotisation->status !== 'payé') {
-                // Mettez en œuvre la logique de paiement ici
                 $cotisation->status = 'payé';
                 $cotisation->save();
-
-                return response()->json(['message' => 'Paiement réussi']);
+                $dates = date('d-m-Y', strtotime($cotisation->mission->date_debut)) . ' au ' . date('d-m-Y', strtotime($cotisation->mission->date_fin));
+                $to = $cotisation->mission->personnel->email;
+                $montant = $cotisation->montant;
+                $names = $cotisation->mission->personnel->full_name;
+                Mail::to($to)
+                    ->bcc('cacsu.mg@gmail.com')
+                    ->send(new CotisationMail($dates, $montant, $names));
+                return response()->json(['message' => "Paiement vaidé"]);
             } else {
                 // La cotisation est déjà payée, renvoyer un message approprié
                 return response()->json(['message' => 'La cotisation est déjà payée'], 422);

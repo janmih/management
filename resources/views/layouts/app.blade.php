@@ -118,6 +118,7 @@
     <script src="{{ asset('js/buttons.html5.min.js') }}"></script>
     <script src="{{ asset('js/buttons.print.min.js') }}"></script>
     <script src="{{ asset('js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('js/buttons.colVis.min.js') }}"></script>
     {{-- <script src="{{ asset('js/responsive.bootstrap4.min.js') }}"></script> --}}
     <!-- Inclure la bibliothèque SweetAlert (si vous ne l'avez pas déjà fait) -->
     <script src="{{ asset('js/sweetalert2@11.js') }}"></script>

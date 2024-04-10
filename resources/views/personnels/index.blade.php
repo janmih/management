@@ -284,6 +284,7 @@
                         $('#ddn').val(personnel.ddn);
                         $('#age').val(personnel.age);
                         $('#genre').val(personnel.genre);
+                        $('#service_id').val(personnel.service_id);
                         $('#adresse').val(personnel.adresse);
                         $('#email').val(personnel.email);
                         $('#contact').val(personnel.contact);

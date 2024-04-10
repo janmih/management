@@ -22,7 +22,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h3>La somme des cotisatons non payé se totalise {{ number_format($totalNonPaye, 2, ',', ' ') }}
+                            <h3>La somme des cotisatons se totalise {{ number_format($totalPaye, 2, ',', ' ') }}
                                 MGA</h3>
                         </div>
 
@@ -38,6 +38,14 @@
                                         <th class="no-export">Actions</th>
                                     </tr>
                                 </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2" style="text-align:right">Total:</th>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
 
@@ -129,6 +137,17 @@
                             }
                         },
                         {
+                            extend: 'colvisGroup',
+                            text: 'Show all',
+                            show: ':hidden'
+                        },
+                        {
+                            extend: 'colvisGroup',
+                            text: 'Hide',
+                            show: [1],
+                            hide: [0, 2]
+                        },
+                        {
                             extend: 'pdf',
                             text: 'PDF',
                             exportOptions: {
@@ -146,7 +165,37 @@
                     ]
                 },
 
-            ]
+            ],
+            footerCallback: function(row, data, start, end, display) {
+                let api = this.api();
+
+                // Remove the formatting to get integer data for summation
+                let intVal = function(i) {
+                    return typeof i === 'string' ?
+                        i.replace(/[\$,]/g, '') * 1 :
+                        typeof i === 'number' ?
+                        i :
+                        0;
+                };
+
+                // Total over all pages
+                total = api
+                    .column(2)
+                    .data()
+                    .reduce((a, b) => intVal(a) + intVal(b), 0);
+
+                // Total over this page
+                pageTotal = api
+                    .column(2, {
+                        page: 'current'
+                    })
+                    .data()
+                    .reduce((a, b) => intVal(a) + intVal(b), 0);
+
+                // Update footer
+                api.column(2).footer().innerHTML =
+                    'Ar ' + pageTotal + ' ( Ar ' + total + ' total)';
+            }
         });
 
         function payerCotisation(id) {
@@ -171,8 +220,6 @@
                             });
                             // Actualiser la DataTable ou effectuer d'autres actions nécessaires
                             table.ajax.reload();
-                            // console.log(response.data.message);
-                            // Actualiser la DataTable ou effectuer d'autres actions nécessaires
                         })
                         .catch(function(error) {
                             Swal.fire({
