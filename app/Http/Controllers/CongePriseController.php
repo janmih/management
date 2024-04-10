@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CongePriseRequest;
-use App\Models\CongeCumule;
 use App\Models\Personnel;
 use App\Models\CongePrise;
+use App\Models\CongeCumule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Requests\CongePriseRequest;
 
 class CongePriseController extends Controller
 {
@@ -27,9 +28,11 @@ class CongePriseController extends Controller
                     return $row->personnel->nom . ' ' . $row->personnel->prenom;
                 })
                 ->addColumn('action', function ($row) {
-                    $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongePriseModal(\'edit\', ' . $row->id . ')">Éditer</button>';
-                    $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongePrise(' . $row->id . ')">Supprimer</button>';
-                    return $btnEditer . ' ' . $btnSupprimer;
+                    if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongePriseModal(\'edit\', ' . $row->id . ')">Éditer</button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongePrise(' . $row->id . ')">Supprimer</button>';
+                        return $btnEditer . ' ' . $btnSupprimer;
+                    }
                 })
                 ->rawColumns(['action'])
                 ->make(true);

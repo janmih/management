@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Personnel;
 use App\Mail\CotisationMail;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use App\Models\CotisationSocial;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class CotisationSocialController extends Controller
 {
+
     /**
      * Display a listing of the resource.
      */
@@ -43,7 +44,9 @@ class CotisationSocialController extends Controller
                 })
                 ->addColumn('action', function ($cotisation) {
                     if ($cotisation->status !== 'payé') {
-                        return '<button class="btn btn-info mb-3" onclick="payerCotisation(' . $cotisation->id . ')">Payer</button>';
+                        if (Auth::user()->hasAnyRole('Trésorier', 'Super Admin')) {
+                            return '<button class="btn btn-info mb-3" onclick="payerCotisation(' . $cotisation->id . ')">Payer</button>';
+                        }
                     } else {
                         return '<button class="btn btn-success mb-3" disabled>Payé</button>';
                     }

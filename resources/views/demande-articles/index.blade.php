@@ -266,13 +266,7 @@
                     }
                 })
                 .then(function(response) {
-                    console.log(response)
-                    Swal.fire({
-                        icon: 'success',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                    toastr.success(response.data.message)
                     table.ajax.reload()
                     quantity.val('')
                 })

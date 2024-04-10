@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Mail\HeloMail;
 use App\Models\EtatStock;
 use App\Models\Personnel;
 use Illuminate\Http\Request;
 use App\Models\DemandeArticle;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\AjouterRequest;
 use App\Jobs\SendEmailNotificationJob;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 class DemandeArticleController extends Controller
@@ -24,7 +21,9 @@ class DemandeArticleController extends Controller
         // Vérifie si la requête est une requête AJAX
         if ($request->ajax()) {
             // Récupère tous les services depuis la base de données
-            $stock = EtatStock::with('article');
+            $stock = EtatStock::with('article')->whereHas('article', function ($query) {
+                $query->where('service_id', Auth::user()->service_id);
+            })->get();
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($stock)
                 ->addColumn('article_id', function ($row) {

@@ -5,7 +5,7 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1>Liste des articles demandés par personneS</h1>
+                    <h1>Liste des articles demandés par personnes</h1>
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
@@ -266,30 +266,13 @@
                     }
                 })
                 .then(function(response) {
-                    toastr.options = {
-                        "closeButton": false,
-                        "debug": false,
-                        "newestOnTop": false,
-                        "progressBar": false,
-                        "positionClass": "toast-top-right",
-                        "preventDuplicates": false,
-                        "onclick": null,
-                        "showDuration": "300",
-                        "hideDuration": "1000",
-                        "timeOut": "1000",
-                        "extendedTimeOut": "1000",
-                        "showEasing": "swing",
-                        "hideEasing": "linear",
-                        "showMethod": "fadeIn",
-                        "hideMethod": "fadeOut"
-                    }
+                    quantity.val('')
                     toastr.success(response.data.message)
                     table.ajax.reload()
-                    quantity.val('')
                 })
                 .catch(function(error) {
                     // Gérer les erreurs
-                    console.error(error);
+                    toastr.error(error.data.message)
                 });
         }
     </script>

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Personnel;
 use Illuminate\Http\Request;
 use App\Models\AutorisationAbsence;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Requests\AutorisatonAbsenceRequest;
 
@@ -28,11 +29,12 @@ class AutorisationAbsenceController extends Controller
                 })
                 ->addColumn('action', function ($row) {
                     if ($row->status !== 'validated' && $row->status !== 'refused') {
-                        $btnValider = '<i onclick="validerAutorisation(' . $row->id . ')" class="btn btn-success btn-sm fa-solid fa-check-to-slot"></i>';
-                        $btnValider .= ' <i class="fa-solid fa-square-xmark btn btn-danger btn-sm" onclick="refuserAutorisation(' . $row->id . ')"></i>';
-                        // $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openautorisationAbsenceModal(\'edit\', ' . $row->id . ')"><i class="fa-solid fa-pen-clip"></i></button>';
-
-                        return $btnValider;
+                        if (Auth::user()->hasAnyRole('Chef de service', 'Super Admin')) {
+                            $btnValider = '<i onclick="validerAutorisation(' . $row->id . ')" class="btn btn-success btn-sm fa-solid fa-check-to-slot"></i>';
+                            $btnValider .= ' <i class="fa-solid fa-square-xmark btn btn-danger btn-sm" onclick="refuserAutorisation(' . $row->id . ')"></i>';
+                            // $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openautorisationAbsenceModal(\'edit\', ' . $row->id . ')"><i class="fa-solid fa-pen-clip"></i></button>';
+                            return $btnValider;
+                        }
                     }
                 })
                 // ->filter(function ($query) use ($request) {

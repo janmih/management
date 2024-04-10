@@ -1,7 +1,4 @@
 @extends('layouts.app') {{-- Assurez-vous d'avoir une vue de mise en page (layout) appropriée --}}
-@section('styles')
-    <link rel="stylesheet" href="{{ asset('css/loader.css') }}">
-@endsection
 @section('content')
     <section class="content-header">
         <div class="container-fluid">
@@ -253,21 +250,11 @@
                     '/demande-valide/' + article
                 )
                 .then(response => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                    toastr.success(response.data.message)
                     table.ajax.reload()
                 })
                 .catch(error => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                    toastr.error(error.data.message)
                 })
         }
         let refuser = (article) => {
@@ -275,30 +262,19 @@
                     '/demande-refuse/' + article
                 )
                 .then(response => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                    toastr.warning(response.data.message)
                     table.ajax.reload()
                 })
                 .catch(error => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                    toastr.error(error.data.message)
                 })
         }
 
         let notify = () => {
-            $(".loading").css('display', "block")
             axios.get('/notify')
-
                 .then(response => {
-                    $(".loading").css('display', "none")
+                    toastr.success(response.data.message)
+
                     Swal.fire({
                         icon: 'success',
                         title: response.data.message,
@@ -307,7 +283,7 @@
                     });
                 })
                 .catch(error => {
-                    console.log(error)
+                    toastr.error(error.data.message)
                 })
         }
     </script>

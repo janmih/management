@@ -13,6 +13,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\ArticleRequest;
 use Illuminate\Support\Facades\Route;
 use App\Http\Requests\ImportFileRequest;
+use Illuminate\Support\Facades\Auth;
 
 class ArticleController extends Controller
 {
@@ -26,7 +27,11 @@ class ArticleController extends Controller
         // Vérifie si la requête est une requête AJAX
         if ($request->ajax()) {
             // Récupère tous les services depuis la base de données
-            $article = Article::with('service');
+            if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
+                $article = Article::with('service');
+            } else {
+                $article = Article::with('service')->where('service_id', auth()->user()->service_id);
+            }
 
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($article)
@@ -34,7 +39,7 @@ class ArticleController extends Controller
                     return $row->service->nom;
                 })
                 ->addColumn('actions', function ($row) {
-                    if (auth()->user()->hasRole('Depositaire Comptable')) {
+                    if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
                         $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openArticleModal(\'edit\', ' . $row->id . ')"><i class="fas fa-pencil"></i></button>';
                         $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteArticle(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
                         return $btnEditer . ' ' . $btnSupprimer;

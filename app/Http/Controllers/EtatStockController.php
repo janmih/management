@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\EtatStock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 class EtatStockController extends Controller
@@ -17,7 +18,14 @@ class EtatStockController extends Controller
         // Vérifie si la requête est une requête AJAX
         if ($request->ajax()) {
             // Récupère tous les services depuis la base de données
-            $etatStock = EtatStock::with('article');
+            if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
+                $etatStock = EtatStock::with('article');
+            } else {
+                $etatStock = EtatStock::with('article')->whereHas('article', function ($query) {
+                    $query->where('service_id', Auth::user()->service_id);
+                })->get();
+            }
+
 
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($etatStock)

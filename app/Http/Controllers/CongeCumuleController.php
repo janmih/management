@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CongeCumule;
 use App\Models\Personnel;
+use App\Models\CongeCumule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 class CongeCumuleController extends Controller
@@ -26,9 +27,11 @@ class CongeCumuleController extends Controller
                     return $row->personnel->nom . ' ' . $row->personnel->prenom;
                 })
                 ->addColumn('action', function ($row) {
-                    $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongeCumuleModal(\'edit\', ' . $row->id . ')">Éditer</button>';
-                    $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongeCumule(' . $row->id . ')">Supprimer</button>';
-                    return $btnEditer . ' ' . $btnSupprimer;
+                    if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongeCumuleModal(\'edit\', ' . $row->id . ')">Éditer</button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongeCumule(' . $row->id . ')">Supprimer</button>';
+                        return $btnEditer . ' ' . $btnSupprimer;
+                    }
                 })
                 ->rawColumns(['action'])
                 ->make(true);
