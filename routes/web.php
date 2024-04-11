@@ -12,13 +12,11 @@ use App\Http\Controllers\ReposMedicalController;
 use App\Http\Controllers\CotisationSocialController;
 use App\Http\Controllers\DemandeArticleController;
 use App\Http\Controllers\EtatStockController;
+use App\Http\Controllers\ModelHasRoleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SortieArticleController;
 use App\Http\Controllers\StockServiceController;
-use App\Mail\HeloMail;
-use App\Models\CongePrise;
-use App\Models\DemandeArticle;
-use Illuminate\Routing\RouteRegistrar;
-use Illuminate\Support\Facades\Mail;
 
 /*
 |--------------------------------------------------------------------------
@@ -79,5 +77,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/demande-refuse/{id}', [DemandeArticleController::class, 'refus'])->name('demande-refuser.index');
         Route::get('/notify', [DemandeArticleController::class, "notify"])->name('notify.index');
         Route::view('/mails', 'mails.index');
+        Route::resource('/roles', RoleController::class)->only(['index', 'store']);
+        Route::resource('/permissions', PermissionController::class)->only(['index', 'store']);
+        Route::resource('/model-has-roles', ModelHasRoleController::class)->only(['index', 'store']);
     });
 });

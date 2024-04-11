@@ -52,33 +52,41 @@
             @endif
             <x-nav-link :route="route('cotisation-socials.index')" icon="fa-solid fa-wallet" color="#7ED7C1">{{ __('Cotisations') }}
             </x-nav-link>
-            @if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin'))
-                <x-nav-link-dropdown icon="fas fa-toolbox nav-icon" color="#EBF400" :route="[
-                    route('articles.index'),
-                    route('etat-stocks.index'),
-                    route('demande-articles.index'),
-                    route('sortie-articles.index'),
-                    route('liste-bons.index'),
-                ]"
-                    title="Gestion de stock">
-                    <x-nav-link :route="route('articles.index')" icon="fa-solid fa-shapes"
-                        color="#FE7A36">{{ __('Stock materiel') }}</x-nav-link>
-                    <x-nav-link :route="route('etat-stocks.index')" icon="fa-solid  fa-square-poll-horizontal"
-                        color="#FF9BD2">{{ __('Etat stock') }}</x-nav-link>
-                    <x-nav-link :route="route('demande-articles.index')" icon="fa-solid  fa-boxes-stacked"
-                        color="#FC6736">{{ __('Demande articles') }}</x-nav-link>
-                    {{-- <x-nav-link :route="route('sortie-articles.index')" icon="fa-solid  fa-boxes-stacked"
+            <x-nav-link-dropdown icon="fas fa-toolbox nav-icon" color="#EBF400" :route="[
+                route('articles.index'),
+                route('etat-stocks.index'),
+                route('demande-articles.index'),
+                route('sortie-articles.index'),
+                route('liste-bons.index'),
+            ]"
+                title="Gestion de stock">
+                <x-nav-link :route="route('articles.index')" icon="fa-solid fa-shapes"
+                    color="#FE7A36">{{ __('Stock materiel') }}</x-nav-link>
+                <x-nav-link :route="route('etat-stocks.index')" icon="fa-solid  fa-square-poll-horizontal"
+                    color="#FF9BD2">{{ __('Etat stock') }}</x-nav-link>
+                <x-nav-link :route="route('demande-articles.index')" icon="fa-solid  fa-boxes-stacked"
+                    color="#FC6736">{{ __('Demande articles') }}</x-nav-link>
+                {{-- <x-nav-link :route="route('sortie-articles.index')" icon="fa-solid  fa-boxes-stacked"
                     color="#0B60B0">{{ __('Sortie articles') }}</x-nav-link> --}}
-                    <x-nav-link :route="route('liste-bons.index')" icon="fa-solid  fa-cubes"
-                        color="#D63484">{{ __('Liste des bons') }}</x-nav-link>
+                <x-nav-link :route="route('liste-bons.index')" icon="fa-solid  fa-cubes"
+                    color="#D63484">{{ __('Liste des bons') }}</x-nav-link>
+            </x-nav-link-dropdown>
+            @if (Auth::user()->hasRole('Super Admin'))
+                <x-nav-link-dropdown icon="fas fa-toolbox nav-icon" color="#EBF400" :route="[route('users.index'), route('roles.index'), route('permissions.index')]" title="Admin">
+                    <x-nav-link :route="route('users.index')" icon="fa-regular fa-folder-open"
+                        color="#FFF8C9">{{ __('Utilisateurs') }}
+                    </x-nav-link>
+                    <x-nav-link :route="route('roles.index')" icon="fa-regular fa-folder-open"
+                        color="#FFF8C9">{{ __('Gestion des roles') }}
+                    </x-nav-link>
+                    <x-nav-link :route="route('permissions.index')" icon="fa-regular fa-folder-open"
+                        color="#FFF8C9">{{ __('Gestion des permissions') }}
+                    </x-nav-link>
+                    <x-nav-link :route="route('model-has-roles.index')" icon="fa-regular fa-folder-open"
+                        color="#FFF8C9">{{ __('Roles des utilisateurs') }}
+                    </x-nav-link>
                 </x-nav-link-dropdown>
             @endif
-            @if (Auth::user()->hasRole('Super Admin'))
-                <x-nav-link :route="route('users.index')" icon="fa-regular fa-folder-open"
-                    color="#FFF8C9">{{ __('Utilisateurs') }}
-                </x-nav-link>
-            @endif
-
         </ul>
     </nav>
     <!-- /.sidebar-menu -->

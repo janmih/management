@@ -9,11 +9,12 @@ use App\Models\EtatStock;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Imports\ArticleImport;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\ArticleRequest;
 use Illuminate\Support\Facades\Route;
 use App\Http\Requests\ImportFileRequest;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class ArticleController extends Controller
 {
@@ -65,61 +66,70 @@ class ArticleController extends Controller
      */
     public function store(ArticleRequest $request)
     {
-        try {
-            // Créer une nouvelle entrée dans la base de données avec les données validées du formulaire
-            $article = Article::create($request->validated());
+        if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
 
-            // Vérifier si l'article existe dans la table etat_stocks
-            $etatStock = EtatStock::where('article_id', $article->id)->first();
+            try {
+                // Créer une nouvelle entrée dans la base de données avec les données validées du formulaire
+                $article = Article::create($request->validated());
 
-            if ($etatStock) {
-                // Si l'article existe, mettez à jour l'entrée
-                $etatStock->update([
-                    'entree' => $request->entree + $etatStock->entree,
-                    'stock_final' => $etatStock->stock_final + $request->entree
-                ]);
-            } else {
-                // Si l'article n'existe pas, ajoutez une nouvelle ligne
-                EtatStock::create([
-                    'article_id' => $article->id,
-                    'entree' => $request->entree,
-                    'sortie' => 0,
-                    'stock_final' => $request->entree
-                ]);
+                // Vérifier si l'article existe dans la table etat_stocks
+                $etatStock = EtatStock::where('article_id', $article->id)->first();
+
+                if ($etatStock) {
+                    // Si l'article existe, mettez à jour l'entrée
+                    $etatStock->update([
+                        'entree' => $request->entree + $etatStock->entree,
+                        'stock_final' => $etatStock->stock_final + $request->entree
+                    ]);
+                } else {
+                    // Si l'article n'existe pas, ajoutez une nouvelle ligne
+                    EtatStock::create([
+                        'article_id' => $article->id,
+                        'entree' => $request->entree,
+                        'sortie' => 0,
+                        'stock_final' => $request->entree
+                    ]);
+                }
+
+                // Retourner une réponse JSON avec un message de succès pour le traitement du formulaire
+                return response()->json(['message' => 'Enregistrement réussi'], 200);
+            } catch (\Exception $e) {
+                // Retourner une réponse JSON avec un message d'erreur en cas d'échec de la création dans la base de données
+                return response()->json(['error' => 'Une erreur est survenue lors du Enregistrement. Veuillez réessayer.'], 500);
             }
-
-            // Retourner une réponse JSON avec un message de succès pour le traitement du formulaire
-            return response()->json(['message' => 'Enregistrement réussi'], 200);
-        } catch (\Exception $e) {
-            // Retourner une réponse JSON avec un message d'erreur en cas d'échec de la création dans la base de données
-            return response()->json(['error' => 'Une erreur est survenue lors du Enregistrement. Veuillez réessayer.'], 500);
+        } else {
+            throw new AuthorizationException('You are not authorized to access this resource.');
         }
     }
 
     public function importArticle(ImportFileRequest $request)
     {
-        if ($request->hasFile('file')) {
-            // Récupérer le fichier téléchargé
-            $file = $request->file('file');
-            // Obtenir l'extension du fichier
-            $extension = $file->getClientOriginalExtension();
-            // Vérifier si le fichier est un fichier Excel ou CSV
-            if ($extension === 'xlsx' || $extension === 'xls' || $extension === 'csv') {
-                try {
-                    // Utiliser Maatwebsite\Excel pour importer les données du fichier
-                    $import = new ArticleImport();
-                    Excel::import($import, $file);
+        if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
+            if ($request->hasFile('file')) {
+                // Récupérer le fichier téléchargé
+                $file = $request->file('file');
+                // Obtenir l'extension du fichier
+                $extension = $file->getClientOriginalExtension();
+                // Vérifier si le fichier est un fichier Excel ou CSV
+                if ($extension === 'xlsx' || $extension === 'xls' || $extension === 'csv') {
+                    try {
+                        // Utiliser Maatwebsite\Excel pour importer les données du fichier
+                        $import = new ArticleImport();
+                        Excel::import($import, $file);
 
-                    // Retourner une réponse JSON avec un message de succès
-                    return response()->json(['message' => 'Importation réussie', 'import' => $import], 200);
-                } catch (\Exception $e) {
-                    // Retourner une réponse JSON avec un message d'erreur en cas d'échec de l'importation
-                    return response()->json(['error' => 'Une erreur est survenue lors de l\'importation. Veuillez réessayer.', 'message' => $e->getMessage()], 500);
+                        // Retourner une réponse JSON avec un message de succès
+                        return response()->json(['message' => 'Importation réussie', 'import' => $import], 200);
+                    } catch (\Exception $e) {
+                        // Retourner une réponse JSON avec un message d'erreur en cas d'échec de l'importation
+                        return response()->json(['error' => 'Une erreur est survenue lors de l\'importation. Veuillez réessayer.', 'message' => $e->getMessage()], 500);
+                    }
+                } else {
+                    // Retourner une réponse JSON avec un message d'erreur si le type de fichier n'est pas pris en charge
+                    return response()->json(['error' => 'Type de fichier non pris en charge. Veuillez télécharger un fichier XLSX, XLS ou CSV.'], 400);
                 }
-            } else {
-                // Retourner une réponse JSON avec un message d'erreur si le type de fichier n'est pas pris en charge
-                return response()->json(['error' => 'Type de fichier non pris en charge. Veuillez télécharger un fichier XLSX, XLS ou CSV.'], 400);
             }
+        } else {
+            throw new AuthorizationException('You are not authorized to access this resource.');
         }
     }
 
@@ -129,7 +139,11 @@ class ArticleController extends Controller
      */
     public function edit(Article $article)
     {
-        return response()->json($article);
+        if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
+            return response()->json($article);
+        } else {
+            throw new AuthorizationException('You are not authorized to access this resource.');
+        }
     }
 
     /**
@@ -137,35 +151,40 @@ class ArticleController extends Controller
      */
     public function update(ArticleRequest $request, Article $article)
     {
-        // Traiter le formulaire comme d'habitude
-        try {
-            // Met à jour le stock service avec les données du formulaire validées
-            $article->update($request->validated());
+        if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
 
-            // Vérifier si l'article existe dans la table etat_stocks
-            $etatStock = EtatStock::where('article_id', $article->id)->first();
+            // Traiter le formulaire comme d'habitude
+            try {
+                // Met à jour le stock service avec les données du formulaire validées
+                $article->update($request->validated());
 
-            if ($etatStock) {
-                // Si l'article existe, mettez à jour l'entrée
-                $etatStock->update([
-                    'entree' => $request->entree + $etatStock->entree,
-                    'stock_final' => $etatStock->stock_final + $request->entree
-                ]);
-            } else {
-                // Si l'article n'existe pas, ajoutez une nouvelle ligne
-                EtatStock::create([
-                    'article_id' => $article->id,
-                    'entree' => $request->entree,
-                    'sortie' => 0,
-                    'stock_final' => $request->entree
-                ]);
+                // Vérifier si l'article existe dans la table etat_stocks
+                $etatStock = EtatStock::where('article_id', $article->id)->first();
+
+                if ($etatStock) {
+                    // Si l'article existe, mettez à jour l'entrée
+                    $etatStock->update([
+                        'entree' => $request->entree + $etatStock->entree,
+                        'stock_final' => $etatStock->stock_final + $request->entree
+                    ]);
+                } else {
+                    // Si l'article n'existe pas, ajoutez une nouvelle ligne
+                    EtatStock::create([
+                        'article_id' => $article->id,
+                        'entree' => $request->entree,
+                        'sortie' => 0,
+                        'stock_final' => $request->entree
+                    ]);
+                }
+
+                // Renvoie une réponse JSON indiquant le succès avec le code de statut 200 (OK)
+                return response()->json(['success' => true, 'message' => 'Mis à jour avec succès'], Response::HTTP_OK);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
-
-            // Renvoie une réponse JSON indiquant le succès avec le code de statut 200 (OK)
-            return response()->json(['success' => true, 'message' => 'Mis à jour avec succès'], Response::HTTP_OK);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        } else {
+            throw new AuthorizationException('You are not authorized to access this resource.');
         }
     }
 
@@ -174,7 +193,11 @@ class ArticleController extends Controller
      */
     public function destroy(Article $article)
     {
-        $article->delete();
-        return response()->json(['success' => true, 'message' => "Supprimer avec success"]);
+        if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
+            $article->delete();
+            return response()->json(['success' => true, 'message' => "Supprimer avec success"]);
+        } else {
+            throw new AuthorizationException('You are not authorized to access this resource.');
+        }
     }
 }

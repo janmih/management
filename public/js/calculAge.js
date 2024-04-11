@@ -28,12 +28,6 @@ function reposJourTotal() {
         return;
     }
 
-    // Vérifiez si la date de début est inférieure à la date de fin
-    if (dateDebut > dateFin) {
-        alert("La date de début ne peut pas être supérieure à la date de fin.");
-        return;
-    }
-
     // Calcul de la différence en jours en excluant les week-ends
     var differenceJours = 0;
 
@@ -71,17 +65,8 @@ function congePrise() {
         return;
     }
 
-    // Vérifiez si la date de début est inférieure à la date de fin
-    if (dateDebut > dateFin) {
-        alert("La date de début ne peut pas être supérieure à la date de fin.");
-        return;
-    }
-
     // Calcul de la différence en jours en excluant les week-ends
-    var differenceJours = dateFin.getDate() - dateDebut.getDate() + 1;
-    console.log(dateFin.getDate());
-    console.log(dateDebut.getDate());
-    console.log(differenceJours);
+    var differenceJours = Math.floor((dateFin - dateDebut) / (1000 * 60 * 60 * 24)) + 1;
 
     // Afficher la différence dans le champ "nombre_jour"
     document.getElementById("nombre_jour").value = differenceJours;
@@ -99,12 +84,6 @@ function calculJourPrise() {
     // Vérifiez si les dates sont valides
     if (isNaN(dateDebut.getTime()) || isNaN(dateFin.getTime())) {
         alert("Veuillez saisir des dates valides.");
-        return;
-    }
-
-    // Vérifiez si la date de début est inférieure à la date de fin
-    if (dateDebut > dateFin) {
-        alert("La date de début ne peut pas être supérieure à la date de fin.");
         return;
     }
 

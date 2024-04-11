@@ -89,7 +89,7 @@ class DemandeArticleController extends Controller
                     return $row->nom . ' ' . $row->prenom;
                 })
                 ->addColumn('actions', function ($row) {
-                    return '<button class="btn btn-default btn-sm" onclick="voir(' . $row->id . ')"><i class="fas fa-eye"></i></button>';
+                    return '<button class="btn btn-default btn-sm bg-info" onclick="voir(' . $row->id . ')"><i class="fas fa-eye"></i></button>';
                 })
                 ->rawColumns(['actions', 'quantity'])
                 ->make(true);
