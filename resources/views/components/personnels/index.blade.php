@@ -131,7 +131,7 @@
                             <div class="form-group">
                                 <label for="contact" class="form-label">Contact:</label>
                                 <input type="text" class="form-control form-control-border border-width-2"
-                                    id="contact" name="contact" data-inputmask="'mask': '+999 99 999 99 99'">
+                                    id="contact" name="contact" data-inputmask="'mask': '+999 99 99 999 99'">
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">

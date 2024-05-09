@@ -22,11 +22,13 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <button type="button" class="btn btn-primary" data-toggle="modal"
-                                onclick="openServiceModal('add')" data-target="#serviceModal">
-                                Ajouter
-                            </button>
-                            <x-services.index />
+                            @hasanyrole(['Ressource Humaine|Super Admin'])
+                                <button type="button" class="btn btn-primary" data-toggle="modal"
+                                    onclick="openServiceModal('add')" data-target="#serviceModal">
+                                    Ajouter
+                                </button>
+                                <x-services.index />
+                            @endhasanyrole
                         </div>
 
                         <div class="card-body">
@@ -37,7 +39,9 @@
                                         <tr>
                                             <th>Nom</th>
                                             <th>Description</th>
-                                            <th class="no-export">Actions</th>
+                                            @hasanyrole(['Ressource Humaine|Super Admin'])
+                                                <th class="no-export">Actions</th>
+                                            @endhasanyrole
                                         </tr>
                                     </thead>
                                 </table>
@@ -72,14 +76,18 @@
                     data: 'description',
                     name: 'description'
                 },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false
-                }
+                @hasanyrole(['Ressource Humaine|Super Admin'])
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
+                @endhasanyrole ()
             ],
-            dom: 'Bfrtip',
+            @hasanyrole(['Ressource Humaine|Super Admin'])
+                dom: 'Bfrtip',
+            @endhasanyrole
             select: true,
             responsive: true,
             buttons: [{
@@ -237,89 +245,81 @@
             ]
         });
 
-        function openServiceModal(action, id = null) {
-            // console.log('Ouverture de la modal avec action :', action);
-            // Réinitialiser le formulaire
-            $('#serviceForm')[0].reset();
+        @hasanyrole('Ressource Humaine|Super Admin')
+            function openServiceModal(action, id = null) {
+                // Réinitialiser le formulaire
+                $('#serviceForm')[0].reset();
 
-            // Modifier le titre de la modal en fonction de l'action
-            $('#serviceModalLabel').text(action === 'add' ? 'Ajouter un service' : 'Modifier un service');
+                // Modifier le titre de la modal en fonction de l'action
+                $('#serviceModalLabel').text(action === 'add' ? 'Ajouter un service' : 'Modifier un service');
 
-            // Modifier l'action du formulaire en fonction de l'action
-            $('#serviceForm').attr('action', action === 'add' ? '{{ route('services.store') }}' :
-                '{{ route('services.update', ':id') }}'.replace(':id', id));
+                // Modifier l'action du formulaire en fonction de l'action
+                $('#serviceForm').attr('action', action === 'add' ? '{{ route('services.store') }}' :
+                    '{{ route('services.update', ':id') }}'.replace(':id', id));
 
-            // Pré-remplir les champs si l'action est 'edit'
-            if (action === 'edit') {
-                axios.get('{{ route('services.edit', ':id') }}'.replace(':id', id))
-                    .then(response => {
-                        const service = response.data;
-                        $('#nom').val(service.nom);
-                        $('#description').val(service.description);
-                        // Pré-remplir d'autres champs au besoin
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
-            }
-
-            // Ouvrir la modal
-            $('#serviceModal').modal('show');
-        }
-
-        function deleteService(serviceId) {
-            Swal.fire({
-                title: 'Êtes-vous sûr?',
-                text: 'La suppression du service est irréversible!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Oui, supprimer!',
-                cancelButtonText: 'Annuler'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Effectuer la suppression avec Axios
-                    axios.delete(`/services/${serviceId}`)
+                // Pré-remplir les champs si l'action est 'edit'
+                if (action === 'edit') {
+                    axios.get('{{ route('services.edit', ':id') }}'.replace(':id', id))
                         .then(response => {
-                            handleServerResponse(response, 'Service supprimé avec succès!');
+                            const service = response.data;
+                            $('#nom').val(service.nom);
+                            $('#description').val(service.description);
                         })
                         .catch(error => {
-                            // Gestion des erreurs d'Axios
-                            console.error(error);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Erreur lors de la suppression du service',
-                                text: 'Veuillez réessayer!',
-                                showConfirmButton: true
-                            });
+                            toastr.error(error.response.data.message);
                         });
                 }
-            });
-        }
 
-        function saveService() {
-            // Récupérer l'action du formulaire
-            const action = $('#serviceForm').attr('action');
+                // Ouvrir la modal
+                $('#serviceModal').modal('show');
+            }
 
-            // Effectuer la requête en fonction de l'action (ajout ou modification)
-            axios({
-                    method: action === '{{ route('services.store') }}' ? 'post' : 'patch',
-                    url: action,
-                    data: $('#serviceForm').serialize(),
-                })
-                .then(response => {
-                    handleServerResponse(response, 'Service enregistré avec succès!', $('#serviceModal'));
-                })
-                .catch(error => {
-                    // Gestion des erreurs d'Axios
-                    console.error(error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erreur lors de l\'enregistrement du service',
-                        text: 'Veuillez réessayer!',
-                        showConfirmButton: true
-                    });
+            function deleteService(serviceId) {
+                Swal.fire({
+                    title: 'Êtes-vous sûr?',
+                    text: 'La suppression du service est irréversible!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, supprimer!',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Effectuer la suppression avec Axios
+                        axios.delete(`/services/${serviceId}`)
+                            .then(response => {
+                                toastr.success(response.data.message);
+                                $('#serviceModal').modal('hide');
+                                table.ajax.reload()
+                            })
+                            .catch(error => {
+                                // Gestion des erreurs d'Axios
+                                toastr.error(error.response.data.message);
+                            });
+                    }
                 });
-        }
+            }
+
+            function saveService() {
+                // Récupérer l'action du formulaire
+                const action = $('#serviceForm').attr('action');
+
+                // Effectuer la requête en fonction de l'action (ajout ou modification)
+                axios({
+                        method: action === '{{ route('services.store') }}' ? 'post' : 'patch',
+                        url: action,
+                        data: $('#serviceForm').serialize(),
+                    })
+                    .then(response => {
+                        toastr.success(response.data.message);
+                        $('#serviceModal').modal('hide');
+                        table.ajax.reload()
+                    })
+                    .catch(error => {
+                        // Gestion des erreurs d'Axios
+                        toastr.error(error.response.data.message);
+                    });
+            }
+        @endhasanyrole
     </script>
 @endsection
 @endsection

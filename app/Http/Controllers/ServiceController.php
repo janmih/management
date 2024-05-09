@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ServiceRequest;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class ServiceController extends Controller
 {
@@ -24,9 +27,13 @@ class ServiceController extends Controller
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($services)
                 ->addColumn('action', function ($row) {
-                    $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openServiceModal(\'edit\', ' . $row->id . ')">Éditer</button>';
-                    $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteService(' . $row->id . ')">Supprimer</button>';
-                    return $btnEditer . ' ' . $btnSupprimer;
+                    if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin', 'Admin'])) {
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openServiceModal(\'edit\', ' . $row->id . ')">Éditer</button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteService(' . $row->id . ')">Supprimer</button>';
+                        return $btnEditer . ' ' . $btnSupprimer;
+                    } else {
+                        return '';
+                    }
                 })
                 ->rawColumns(['action'])
                 ->make(true);
@@ -46,23 +53,21 @@ class ServiceController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
+    public function store(ServiceRequest $request)
     {
-        try {
-            // Valide les données du formulaire
-            $request->validate([
-                'nom' => 'required|string|unique:services',
-                'description' => 'string',
-            ]);
+        if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin'])) {
+            try {
+                // Crée un nouveau service avec les données du formulaire
+                Service::create($request->validated());
 
-            // Crée un nouveau service avec les données du formulaire
-            Service::create($request->all());
-
-            // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
-            return response()->json(['success' => true, 'message' => 'Nouveau service créé avec succès'], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la création du service', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+                // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
+                return response()->json(['success' => true, 'message' => 'Nouveau service créé avec succès'], Response::HTTP_CREATED);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la création du service', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -72,8 +77,11 @@ class ServiceController extends Controller
      */
     public function edit(Service $service)
     {
-        // Renvoie les données du service au format JSON
-        return response()->json($service);
+        if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin'])) {
+            return response()->json($service);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 
 
@@ -84,27 +92,20 @@ class ServiceController extends Controller
      * @param  Service  $service
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request, Service $service)
+    public function update(ServiceRequest $request, Service $service)
     {
-        // Valide les données du formulaire
-        $request->validate([
-            'nom' => [
-                'required',
-                'string',
-                Rule::unique('services', 'nom')->ignore($service->id, 'id_service')
-            ],
-            'description' => 'string',
-            // Autres règles de validation
-        ]);
-
-        try {
-            // Met à jour les données du service
-            $service->update($request->all());
-            // Renvoie une réponse JSON indiquant le succès
-            return response()->json(['success' => true, 'message' => 'Service mis à jour avec succès']);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON avec un message d'erreur
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour du service', 'error' => $e->getMessage()], 500);
+        if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin'])) {
+            try {
+                // Met à jour les données du service
+                $service->update($request->validated());
+                // Renvoie une réponse JSON indiquant le succès
+                return response()->json(['success' => true, 'message' => 'Service mis à jour avec succès']);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON avec un message d'erreur
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour du service', 'error' => $e->getMessage()], 500);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -114,10 +115,12 @@ class ServiceController extends Controller
      */
     public function destroy(Service $service)
     {
-        // Supprime le service de la base de données
-        $service->delete();
-
-        // Renvoie une réponse JSON indiquant le succès
-        return response()->json(['success' => true, 'message' => 'Service supprimé avec succès']);
+        if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin'])) {
+            $service->delete();
+            // Renvoie une réponse JSON indiquant le succès
+            return response()->json(['success' => true, 'message' => 'Service supprimé avec succès']);
+        } else {
+            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
+        }
     }
 }

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('date_debut');
             $table->date('date_fin');
             $table->integer('nombre_jour');
+            $table->string('status')->default('stand by');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();
@@ -26,7 +27,7 @@ return new class extends Migration
 
             // Foreign key constraints
             // Clé étrangère vers la table "personnel"
-            $table->foreign('personnel_id')->references('id_personnel')->on('personnels');
+            $table->foreign('personnel_id')->references('id')->on('personnels');
         });
     }
 

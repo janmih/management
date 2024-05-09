@@ -6,10 +6,14 @@ use App\Models\EtatStock;
 use App\Models\Personnel;
 use Illuminate\Http\Request;
 use App\Models\DemandeArticle;
-use App\Http\Requests\AjouterRequest;
-use App\Jobs\SendEmailNotificationJob;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\AjouterRequest;
 use Illuminate\Support\Facades\Route;
+use App\Jobs\SendEmailNotificationJob;
+use App\Jobs\SendMailAfterValidateArticle;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\DepositaireNotification;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class DemandeArticleController extends Controller
 {
@@ -21,13 +25,17 @@ class DemandeArticleController extends Controller
         // Vérifie si la requête est une requête AJAX
         if ($request->ajax()) {
             // Récupère tous les services depuis la base de données
-            $stock = EtatStock::with('article')->whereHas('article', function ($query) {
-                $query->where('service_id', Auth::user()->service_id);
-            })->get();
+            if (Auth::user()->hasAnyRole(['Depositaire Comptable', 'Super Admin'])) {
+                $stock = EtatStock::with('article');
+            } else {
+                $stock = EtatStock::whereHas('article', function ($query) {
+                    $query->where('service_id', Auth::user()->service_id);
+                })->load('article');
+            }
             // Utilise DataTables pour formater les données et les renvoyer au client
-            return datatables()->of($stock)
+            return datatables()->of($stock->get())
                 ->addColumn('article_id', function ($row) {
-                    return optional($row->article)->designation;
+                    return optional($row->article)->designation ?? '';
                 })
                 ->addColumn('quantity', function ($row) {
                     return '<input type="number" name="quantity" class="form-control" id="quantity_' . $row->article_id . '">';
@@ -43,31 +51,46 @@ class DemandeArticleController extends Controller
         // Extraire le segment principal du nom de la route
         $segments = explode('.', $routeName);
         $mainSegment = $segments[0];
-        $personnel = $user = Personnel::where('user_id', auth()->id())->first();
+        $personnel = Personnel::where('user_id', auth()->id())->first();
         $personnel_id = $personnel->id;
         // Si ce n'est pas une requête AJAX, renvoie la vue pour l'affichage normal
         return view('demande-articles.index', compact('mainSegment', 'personnel_id'));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param AjouterRequest $request The HTTP request
+     * @throws Some_Exception_Class If the article is not found
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function ajouter(AjouterRequest $request)
     {
+        $validatedData = $request->validated();
         DemandeArticle::create([
-            "personnel_id" => $request->id,
-            "article_id" => $request->article_id,
-            "quantity" => $request->quantity
+            "personnel_id" => $validatedData['personnel_id'],
+            "article_id" => $validatedData['article_id'],
+            "quantity" => $validatedData['quantity']
         ]);
-        $etatStock = EtatStock::where('article_id', $request->article_id)->first();
+        $etatStock = EtatStock::where('article_id', $validatedData['article_id'])->first();
         if ($etatStock) {
             $etatStock->update([
-                'sortie' => $request->quantity,
-                'stock_final' => $etatStock->stock_final - $request->quantity
+                'sortie' => $validatedData['quantity'],
+                'stock_final' => $etatStock->stock_final - $validatedData['quantity']
             ]);
         } else {
             return response()->json(['success' => true, "message" => "L'article est introuvable"]);
         }
-        return response()->json(['success' => true, "message" => "Demande valider"]);
+        return response()->json(['success' => true, "message" => "Article ajouter"]);
     }
 
+    /**
+     * Retrieves all services from the database and formats the data using DataTables for client response.
+     *
+     * @param Request $request The HTTP request
+     * @throws Some_Exception_Class If authorization fails
+     * @return View The view for normal display or JSON response for AJAX request
+     */
     public function listeBons(Request $request)
     {
         if ($request->ajax()) {
@@ -105,33 +128,42 @@ class DemandeArticleController extends Controller
 
     public function listeArticleBons(Request $request, $id)
     {
-        if ($request->ajax()) {
-            // Récupère tous les services depuis la base de données
-            $bons = DemandeArticle::with('article', 'article.etatStock')->where(['personnel_id' => $id, 'status' => 'En attente'])->get();
-            // Utilise DataTables pour formater les données et les renvoyer au client
-            return datatables()->of($bons)
-                ->addColumn('article', function ($row) {
-                    return $row->article->designation;
-                })
-                ->addColumn('etatStock', function ($row) {
-                    return $row->article->etatStock[0]->stock_final;
-                })
-                ->addColumn('actions', function ($row) {
-                    $btnValider =  '<button class="btn btn-success btn-sm" onclick="valider(' . $row->id . ')"><i class="fas fa-circle-check"></i></button>';
-                    $btnRefuser =  '<button class="btn btn-danger btn-sm" onclick="refuser(' . $row->id . ')"><i class="fas fa-ban"></i></button>';
-                    return $btnValider . ' ' . $btnRefuser;
-                })
-                ->rawColumns(['actions'])
-                ->make(true);
-        }
+        $personnel = Personnel::find($id);
+        if (Auth::user()->id == $personnel->user_id || Auth::user()->hasAnyRole(['SSE', 'SPSS', 'SMF', 'Chefferie', 'Super Admin'])) {
+            if ($request->ajax()) {
+                // Récupère tous les services depuis la base de données
+                $bons = DemandeArticle::with('article', 'article.etatStock')->where(['personnel_id' => $id, 'status' => 'En attente'])->get();
+                // Utilise DataTables pour formater les données et les renvoyer au client
+                return datatables()->of($bons)
+                    ->addColumn('article', function ($row) {
+                        return $row->article->designation;
+                    })
+                    ->addColumn('etatStock', function ($row) {
+                        return $row->article->etatStock[0]->stock_final;
+                    })
+                    ->addColumn('actions', function ($row) {
+                        if (Auth::user()->hasAnyRole(['SSE', 'SPSS', 'SMF', 'Chefferie', 'Super Admin'])) {
+                            $btnValider =  '<button class="btn btn-success btn-sm" onclick="valider(' . $row->id . ')"><i class="fas fa-circle-check"></i></button>';
+                            $btnRefuser =  '<button class="btn btn-danger btn-sm" onclick="refuser(' . $row->id . ')"><i class="fas fa-ban"></i></button>';
+                            return $btnValider . ' ' . $btnRefuser;
+                        } else {
+                            return '';
+                        }
+                    })
+                    ->rawColumns(['actions'])
+                    ->make(true);
+            }
 
-        $routeName = Route::currentRouteName();
-        // Extraire le segment principal du nom de la route
-        $segments = explode('.', $routeName);
-        $mainSegment = $segments[0];
-        $personnel_id = $id;
-        // Si ce n'est pas une requête AJAX, renvoie la vue pour l'affichage normal
-        return view('liste-article-bons.index', compact('mainSegment', 'personnel_id'));
+            $routeName = Route::currentRouteName();
+            // Extraire le segment principal du nom de la route
+            $segments = explode('.', $routeName);
+            $mainSegment = $segments[0];
+            $personnel_id = $id;
+            // Si ce n'est pas une requête AJAX, renvoie la vue pour l'affichage normal
+            return view('liste-article-bons.index', compact('mainSegment', 'personnel_id'));
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 
 
@@ -140,10 +172,14 @@ class DemandeArticleController extends Controller
      */
     public function valide($id)
     {
+        if (Auth::user()->hasAnyRole(['SSE', 'SPSS', 'SMF', 'Chefferie', 'Super Admin'])) {
 
-        $demandeArticle = DemandeArticle::findOrFail($id);
-        $demandeArticle->update(['status' => "Valider"]);
-        return response()->json(['success' => true, "message" => "Demande valider", 'article' => $demandeArticle]);
+            $demandeArticle = DemandeArticle::findOrFail($id);
+            $demandeArticle->update(['status' => "Valider"]);
+            return response()->json(['success' => true, "message" => "Demande valider", 'article' => $demandeArticle]);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 
     /**
@@ -151,19 +187,24 @@ class DemandeArticleController extends Controller
      */
     public function refus($id)
     {
-        $demande = DemandeArticle::findOrFail($id);
-        DemandeArticle::findOrFail($id)->update(['status' => "Refuser"]);
+        if (Auth::user()->hasAnyRole(['SSE', 'SPSS', 'SMF', 'Chefferie', 'Super Admin'])) {
 
-        // Mettre à jour l'état de stock de l'article
-        $etatStock = EtatStock::where('article_id', $demande->article_id)->first();
-        if ($etatStock != null) {
-            // Mettre à jour les valeurs d'état de stock en fonction de la demande refusée
-            $etatStock->update([
-                'sortie' => $etatStock->sortie - $demande->quantity, // Soustraire la quantité de la demande refusée
-                'stock_final' => $etatStock->stock_final + $demande->quantity // Mettre à jour le stock final
-            ]);
+            $demande = DemandeArticle::findOrFail($id);
+            DemandeArticle::findOrFail($id)->update(['status' => "Refuser"]);
+
+            // Mettre à jour l'état de stock de l'article
+            $etatStock = EtatStock::where('article_id', $demande->article_id)->first();
+            if ($etatStock != null) {
+                // Mettre à jour les valeurs d'état de stock en fonction de la demande refusée
+                $etatStock->update([
+                    'sortie' => $etatStock->sortie - $demande->quantity, // Soustraire la quantité de la demande refusée
+                    'stock_final' => $etatStock->stock_final + $demande->quantity // Mettre à jour le stock final
+                ]);
+            }
+            return response()->json(['success' => true, "message" => "Demande refuser"]);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
-        return response()->json(['success' => true, "message" => "Demande refuser"]);
     }
 
     /**
@@ -171,15 +212,19 @@ class DemandeArticleController extends Controller
      */
     public function notify()
     {
-        $listMaterielValider = DemandeArticle::where('status', 'Valider')
-            ->whereHas('personnel', function ($query) {
-                $query->where('user_id', auth()->user()->id);
-            })
-            ->with('personnel', 'article', 'personnel.service')
-            ->where('livrer', 'Non')
-            ->get();
-        // dd($listMaterielValider);
-        SendEmailNotificationJob::dispatch($listMaterielValider);
-        return response()->json(['success' => true, "message" => "Notification envoyer"]);
+        if (Auth::user()->hasAnyRole(['SSE', 'SPSS', 'SMF', 'Chefferie', 'Super Admin'])) {
+
+            $listMaterielValider = DemandeArticle::where('status', 'Valider')
+                ->whereHas('personnel', function ($query) {
+                    $query->where('user_id', auth()->user()->id);
+                })
+                ->with('personnel', 'article', 'personnel.service')
+                ->where('livrer', 'Non')
+                ->get();
+            SendMailAfterValidateArticle::dispatch($listMaterielValider);
+            return response()->json(['success' => true, "message" => "Notification envoyer"]);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 }

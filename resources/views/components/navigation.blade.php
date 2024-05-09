@@ -19,38 +19,34 @@
                 </a>
             </li> --}}
             <x-nav-link :route="route('home')" icon="fas fa-th" color="#AE445A">{{ __('Dashboard') }} </x-nav-link>
-            @can('services.manage')
-                <x-nav-link :route="route('services.index')" icon="fas fa-layer-group" color="#F39F5A">{{ __('Services') }} </x-nav-link>
-            @endcan
-            @can('personnels.manage')
-                <x-nav-link-dropdown title="Ressource Humaine" icon="fa-solid fa-people-roof" color="#E26EE5"
-                    :route="[
-                        route('personnels.index'),
-                        route('conge-cumules.index'),
-                        route('repos-medicals.index'),
-                        route('missions.index'),
-                        route('cotisation-socials.index'),
-                        route('conge-prises.index'),
-                        route('autorisation-absences.index'),
-                    ]">
-                    <x-nav-link :route="route('personnels.index')" icon="fas fa-users-gear" color="#756AB6">{{ __('Personnels') }}
-                    </x-nav-link>
-                    <x-nav-link :route="route('conge-cumules.index')" icon="fas fa-clipboard"
-                        color="#AC87C5">{{ __('Congés cumulé par année') }}
-                    </x-nav-link>
-                    <x-nav-link :route="route('repos-medicals.index')" icon="fas fa-notes-medical" color="#E0AED0">{{ __('Repos médical') }}
-                    </x-nav-link>
-                    <x-nav-link :route="route('missions.index')" icon="fas fa-paper-plane" color="#FFE5E5">{{ __('Missions') }}
-                    </x-nav-link>
-                    <x-nav-link :route="route('cotisation-socials.index')" icon="fa-solid fa-wallet" color="#7ED7C1">{{ __('Cotisations') }}
-                    </x-nav-link>
-                    <x-nav-link :route="route('conge-prises.index')" icon="fa-brands fa-squarespace" color="#65B741">{{ __('Congé') }}
-                    </x-nav-link>
-                    <x-nav-link :route="route('autorisation-absences.index')" icon="fa-solid fa-school"
-                        color="#F3B95F">{{ __('Autorisation d\'absence') }}
-                    </x-nav-link>
-                </x-nav-link-dropdown>
-            @endcan
+            <x-nav-link :route="route('services.index')" icon="fas fa-layer-group" color="#F39F5A">{{ __('Services') }} </x-nav-link>
+            <x-nav-link-dropdown title="Ressource Humaine" icon="fa-solid fa-people-roof" color="#E26EE5"
+                :route="[
+                    route('personnels.index'),
+                    route('conge-cumules.index'),
+                    route('repos-medicals.index'),
+                    route('missions.index'),
+                    route('cotisation-socials.index'),
+                    route('conge-prises.index'),
+                    route('autorisation-absences.index'),
+                ]">
+                <x-nav-link :route="route('personnels.index')" icon="fas fa-users-gear" color="#756AB6">{{ __('Personnels') }}
+                </x-nav-link>
+                <x-nav-link :route="route('conge-cumules.index')" icon="fas fa-clipboard"
+                    color="#AC87C5">{{ __('Congés cumulé par année') }}
+                </x-nav-link>
+                <x-nav-link :route="route('repos-medicals.index')" icon="fas fa-notes-medical" color="#E0AED0">{{ __('Repos médical') }}
+                </x-nav-link>
+                <x-nav-link :route="route('missions.index')" icon="fas fa-paper-plane" color="#FFE5E5">{{ __('Missions') }}
+                </x-nav-link>
+                <x-nav-link :route="route('cotisation-socials.index')" icon="fa-solid fa-wallet" color="#7ED7C1">{{ __('Cotisations') }}
+                </x-nav-link>
+                <x-nav-link :route="route('conge-prises.index')" icon="fa-brands fa-squarespace" color="#65B741">{{ __('Congé') }}
+                </x-nav-link>
+                <x-nav-link :route="route('autorisation-absences.index')" icon="fa-solid fa-school"
+                    color="#F3B95F">{{ __('Autorisation d\'absence') }}
+                </x-nav-link>
+            </x-nav-link-dropdown>
             <x-nav-link-dropdown icon="fas fa-toolbox nav-icon" color="#EBF400" :route="[
                 route('articles.index'),
                 route('etat-stocks.index'),

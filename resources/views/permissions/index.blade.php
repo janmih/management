@@ -77,8 +77,8 @@
                     table.ajax.reload()
                 })
                 .catch(error => {
-                    console.log(error);
-                    toastr.error("Une erreur est survenue lors du Enregistrement. Veuillez réessayer.")
+                    document.getElementById("name").classList.add("is-invalid");
+                    $("#nameError").text(error.response.data.errors.name);
                 });
         }
     </script>

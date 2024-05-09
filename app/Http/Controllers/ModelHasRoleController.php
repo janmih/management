@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
+use App\Models\User;
+use App\Models\Personnel;
 use App\Models\ModelHasRole;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Http\Requests\StoreModelHasRoleRequest;
 use App\Http\Requests\UpdateModelHasRoleRequest;
 
@@ -11,17 +16,26 @@ class ModelHasRoleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-    }
+        if ($request->ajax()) {
+            $users = User::all();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+            return datatables()->of($users)
+                ->addColumn('roles', function ($user) {
+                    return $user->roles()->pluck('name')->implode(' - ');
+                })
+                ->make(true);
+        }
+        $routeName = Route::currentRouteName();
+        // Extraire le segment principal du nom de la route
+        $segments = explode('.', $routeName);
+        $mainSegment = $segments[0];
+        $personnels = Personnel::all();
+        $roles = Role::all();
+        // Si ce n'est pas une requête AJAX, renvoie la vue pour l'affichage normal
+
+        return view('model-has-roles.index', compact('mainSegment', 'personnels', 'roles'));
     }
 
     /**
@@ -29,7 +43,7 @@ class ModelHasRoleController extends Controller
      */
     public function store(StoreModelHasRoleRequest $request)
     {
-        //
+        return response()->json($request);
     }
 
     /**

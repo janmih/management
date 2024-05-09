@@ -21,8 +21,8 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        @can('article.manage')
-                            <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            @hasanyrole(['Super Admin', 'Depositaire Comptable'])
                                 <div class="form-group d-flex align-items-center">
                                     <button type="button" class="btn btn-primary" data-toggle="modal"
                                         onclick="openArticleModal('add')" data-target="#articleModal">
@@ -36,10 +36,9 @@
                                         <button type="submit" class="btn btn-primary ml-2">Importer</button>
                                     </div>
                                 </form>
-                            </div>
-                            <x-articles.index :services="$services" />
-                        @endcan
-
+                            @endhasanyrole
+                        </div>
+                        <x-articles.index :services="$services" />
                         <div class="card-body">
                             <div class="dt-bootstrap5 table-responsive-sm">
                                 <table id="articleTable" style="width:100%"
@@ -135,7 +134,9 @@
                     searchable: false
                 }
             ],
-            dom: 'Bfrtip',
+            @hasanyrole(['Super Admin', 'Depositaire Comptable'])
+                dom: 'Bfrtip',
+            @endhasanyrole
             select: true,
             responsive: true,
             buttons: [{
@@ -371,22 +372,16 @@
 
             axios.post("/articles/import", formData)
                 .then(response => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                    toastr.success(response.data.message)
                     $('#file').val('');
                     table.ajax.reload();
                 })
                 .catch(error => {
-                    console.log(error)
                     Swal.fire({
                         icon: 'error',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
+                        title: 'Erreur lors de l\'enregistrement',
+                        text: 'Veuillez réessayer!',
+                        showConfirmButton: true
                     });
                 });
         })

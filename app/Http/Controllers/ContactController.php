@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CotisationSocialParMois;
+use App\Models\Contact;
 use Illuminate\Http\Request;
 
-class CotisationsMensuellesController extends Controller
+class ContactController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +34,7 @@ class CotisationsMensuellesController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(CotisationSocialParMois $cotisationSocialParMois)
+    public function show(Contact $contact)
     {
         //
     }
@@ -42,7 +42,7 @@ class CotisationsMensuellesController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CotisationSocialParMois $cotisationSocialParMois)
+    public function edit(Contact $contact)
     {
         //
     }
@@ -50,7 +50,7 @@ class CotisationsMensuellesController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, CotisationSocialParMois $cotisationSocialParMois)
+    public function update(Request $request, Contact $contact)
     {
         //
     }
@@ -58,7 +58,7 @@ class CotisationsMensuellesController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CotisationSocialParMois $cotisationSocialParMois)
+    public function destroy(Contact $contact)
     {
         //
     }

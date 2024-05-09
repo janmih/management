@@ -20,13 +20,13 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header">
-
-                            <button type="button" class="btn btn-success" onclick="notify()">
-                                Notifier
-                            </button>
-                        </div>
-
+                        @hasanyrole('SPSS|SSE|SMF|Chefferie|Super Admin')
+                            <div class="card-header">
+                                <button type="button" class="btn btn-success" onclick="notify()">
+                                    Notifier
+                                </button>
+                            </div>
+                        @endhasanyrole
                         <div class="card-body">
                             <div class="dt-bootstrap5 table-responsive-lg">
                                 <table id="demandePersonTable" style="width:100%"
@@ -36,7 +36,9 @@
                                             <th>Designation</th>
                                             <th>Stock final</th>
                                             <th>Quantité</th>
-                                            <th class="no-export">Actions</th>
+                                            @hasanyrole('SPSS|SSE|SMF|Chefferie|Super Admin')
+                                                <th class="no-export">Actions</th>
+                                            @endhasanyrole
                                         </tr>
                                     </thead>
                                 </table>
@@ -80,12 +82,14 @@
                     data: 'quantity',
                     name: 'quantity',
                 },
-                {
-                    data: 'actions',
-                    name: 'actions',
-                    orderable: false,
-                    searchable: false
-                }
+                @hasanyrole('SPSS|SSE|SMF|Chefferie|Super Admin')
+                    {
+                        data: 'actions',
+                        name: 'actions',
+                        orderable: false,
+                        searchable: false
+                    }
+                @endhasanyrole
             ],
             dom: 'Bfrtip',
             select: true,
@@ -244,48 +248,42 @@
 
             ]
         });
+        @hasanyrole('SPSS|SSE|SMF|Chefferie|Super Admin')
+            let valider = (article) => {
+                axios.get(
+                        '/demande-valide/' + article
+                    )
+                    .then(response => {
+                        toastr.success(response.data.message)
+                        table.ajax.reload()
+                    })
+                    .catch(error => {
+                        toastr.error(error.data.message)
+                    })
+            }
+            let refuser = (article) => {
+                axios.get(
+                        '/demande-refuse/' + article
+                    )
+                    .then(response => {
+                        toastr.warning(response.data.message)
+                        table.ajax.reload()
+                    })
+                    .catch(error => {
+                        toastr.error(error.data.message)
+                    })
+            }
 
-        let valider = (article) => {
-            axios.get(
-                    '/demande-valide/' + article
-                )
-                .then(response => {
-                    toastr.success(response.data.message)
-                    table.ajax.reload()
-                })
-                .catch(error => {
-                    toastr.error(error.data.message)
-                })
-        }
-        let refuser = (article) => {
-            axios.get(
-                    '/demande-refuse/' + article
-                )
-                .then(response => {
-                    toastr.warning(response.data.message)
-                    table.ajax.reload()
-                })
-                .catch(error => {
-                    toastr.error(error.data.message)
-                })
-        }
-
-        let notify = () => {
-            axios.get('/notify')
-                .then(response => {
-                    toastr.success(response.data.message)
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
-                })
-                .catch(error => {
-                    toastr.error(error.data.message)
-                })
-        }
+            let notify = () => {
+                axios.get('/notify')
+                    .then(response => {
+                        toastr.success(response.data.message)
+                    })
+                    .catch(error => {
+                        toastr.error(error.response.data.message)
+                    })
+            }
+        @endhasanyrole
     </script>
 @endsection
 @endsection

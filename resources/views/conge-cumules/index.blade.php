@@ -24,11 +24,13 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <button type="button" class="btn btn-primary" data-toggle="modal"
-                                onclick="openCongeCumuleModal('add')" data-target="#congeCumuleModal">
-                                Ajouter
-                            </button>
-                            <x-conge-cumules.index :personnels='$personnels' />
+                            @hasanyrole('Ressource Humaine|Super Admin')
+                                <button type="button" class="btn btn-primary" data-toggle="modal"
+                                    onclick="openCongeCumuleModal('add')" data-target="#congeCumuleModal">
+                                    Ajouter
+                                </button>
+                                <x-conge-cumules.index :personnels='$personnels' />
+                            @endhasanyrole
                         </div>
 
                         <div class="card-body">
@@ -42,7 +44,9 @@
                                             <th>Jour Total</th>
                                             <th>Jour Prise</th>
                                             <th>Jour Reste</th>
-                                            <th class="no-export">Actions</th>
+                                            @hasanyrole('Ressource Humaine|Super Admin')
+                                                <th class="no-export">Actions</th>
+                                            @endhasanyrole
                                         </tr>
                                     </thead>
                                 </table>
@@ -96,12 +100,14 @@
                     data: 'jour_reste',
                     name: 'jour_reste'
                 },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false
-                }
+                @hasanyrole('Ressource Humaine|Super Admin')
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
+                @endhasanyrole
             ],
             dom: 'Bfrtip',
             select: true,
@@ -158,92 +164,87 @@
             ]
         });
 
-        function openCongeCumuleModal(action, id = null) {
-            // console.log('Ouverture de la modal avec action :', action);
-            // Réinitialiser le formulaire
-            $('#congeCumuleForm')[0].reset();
+        @hasanyrole('Ressource Humaine|Super Admin')
 
-            // Modifier le titre de la modal en fonction de l'action
-            $('#congeCumuleModalLabel').text(action === 'add' ? 'Ajouter un congé' : 'Modifier un congé');
+            function openCongeCumuleModal(action, id = null) {
+                // console.log('Ouverture de la modal avec action :', action);
+                // Réinitialiser le formulaire
+                $('#congeCumuleForm')[0].reset();
 
-            // Modifier l'action du formulaire en fonction de l'action
-            $('#congeCumuleForm').attr('action', action === 'add' ? '{{ route('conge-cumules.store') }}' :
-                '{{ route('conge-cumules.update', ':id') }}'.replace(':id', id));
+                // Modifier le titre de la modal en fonction de l'action
+                $('#congeCumuleModalLabel').text(action === 'add' ? 'Ajouter un congé' : 'Modifier un congé');
 
-            // Pré-remplir les champs si l'action est 'edit'
-            if (action === 'edit') {
-                axios.get('{{ route('conge-cumules.edit', ':id') }}'.replace(':id', id))
-                    .then(response => {
-                        const congeCumules = response.data;
-                        $('#personnel_id').val(congeCumules.personnel_id);
-                        $('#annee').val(congeCumules.annee);
-                        $('#jour_total').val(congeCumules.jour_total);
-                        $('#jour_prise').val(congeCumules.jour_prise);
-                        $('#jour_reste').val(congeCumules.jour_reste);
-                        // Pré-remplir d'autres champs au besoin
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
-            }
+                // Modifier l'action du formulaire en fonction de l'action
+                $('#congeCumuleForm').attr('action', action === 'add' ? '{{ route('conge-cumules.store') }}' :
+                    '{{ route('conge-cumules.update', ':id') }}'.replace(':id', id));
 
-            // Ouvrir la modal
-            $('#congeCumuleModal').modal('show');
-        }
-
-        function deleteCongeCumule(congeCumuleId) {
-            Swal.fire({
-                title: 'Êtes-vous sûr?',
-                text: 'La suppression est irréversible!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Oui, supprimer!',
-                cancelButtonText: 'Annuler'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Effectuer la suppression avec Axios
-                    axios.delete(`/conge-cumules/${congeCumuleId}`)
+                // Pré-remplir les champs si l'action est 'edit'
+                if (action === 'edit') {
+                    axios.get('{{ route('conge-cumules.edit', ':id') }}'.replace(':id', id))
                         .then(response => {
-                            handleServerResponse(response, 'Supprimé avec succès!', $('#congeCumuleModal'));
+                            const congeCumules = response.data;
+                            $('#personnel_id').val(congeCumules.personnel_id);
+                            $('#annee').val(congeCumules.annee);
+                            $('#jour_total').val(congeCumules.jour_total);
+                            $('#jour_prise').val(congeCumules.jour_prise);
+                            $('#jour_reste').val(congeCumules.jour_reste);
+                            // Pré-remplir d'autres champs au besoin
                         })
                         .catch(error => {
-                            // Gestion des erreurs d'Axios
-                            console.error(error);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Erreur lors de la suppression',
-                                text: 'Veuillez réessayer!',
-                                showConfirmButton: true
-                            });
+                            toastr.error(error.response.data.message);
                         });
                 }
-            });
-        }
 
-        function saveCongeCumule() {
-            // Récupérer l'action du formulaire
-            const action = $('#congeCumuleForm').attr('action');
+                // Ouvrir la modal
+                $('#congeCumuleModal').modal('show');
+            }
 
-            // Effectuer la requête en fonction de l'action (ajout ou modification)
-            axios({
-                    method: action === '{{ route('conge-cumules.store') }}' ? 'post' : 'patch',
-                    url: action,
-                    data: $('#congeCumuleForm').serialize(),
-                })
-                .then(response => {
-                    handleServerResponse(response, 'Enregistré avec succès!', $('#congeCumuleModal'));
-                })
-                .catch(error => {
-                    // Gestion des erreurs d'Axios
-                    console.error(error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erreur lors de l\'enregistrement',
-                        text: 'Veuillez réessayer!',
-                        showConfirmButton: true
-                    });
+            function deleteCongeCumule(congeCumuleId) {
+                Swal.fire({
+                    title: 'Êtes-vous sûr?',
+                    text: 'La suppression est irréversible!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, supprimer!',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Effectuer la suppression avec Axios
+                        axios.delete(`/conge-cumules/${congeCumuleId}`)
+                            .then(response => {
+                                toastr.success(response.data.message);
+                                $('#congeCumuleModal').modal('hide');
+                                table.ajax.reload();
+                            })
+                            .catch(error => {
+                                // Gestion des erreurs d'Axios
+                                toastr.success(error.response.data.message);
+                            });
+                    }
                 });
-        }
+            }
+
+            function saveCongeCumule() {
+                // Récupérer l'action du formulaire
+                const action = $('#congeCumuleForm').attr('action');
+
+                // Effectuer la requête en fonction de l'action (ajout ou modification)
+                axios({
+                        method: action === '{{ route('conge-cumules.store') }}' ? 'post' : 'patch',
+                        url: action,
+                        data: $('#congeCumuleForm').serialize(),
+                    })
+                    .then(response => {
+                        toastr.success(response.data.message)
+                        $('#congeCumuleModal').modal('hide');
+                        table.ajax.reload();
+                    })
+                    .catch(error => {
+                        // Gestion des erreurs d'Axios
+                        toastr.error(error.response.data.message);
+                    });
+            }
+        @endhasanyrole
     </script>
 @endsection
 @endsection

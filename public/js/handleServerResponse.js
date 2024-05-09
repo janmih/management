@@ -1,12 +1,8 @@
 function handleServerResponse(response, successMessage, modal) {
     if (response.data.success) {
         // Succès
-        Swal.fire({
-            icon: 'success',
-            title: successMessage,
-            showConfirmButton: false,
-            timer: 1500
-        });
+        toastr.success(successMessage)
+
         // Actualiser la DataTable ou effectuer d'autres actions nécessaires
         table.ajax.reload();
         // table.draw();
@@ -16,11 +12,7 @@ function handleServerResponse(response, successMessage, modal) {
         }
     } else {
         // Échec
-        Swal.fire({
-            icon: 'error',
-            title: response.data.message,
-            showConfirmButton: true
-        });
+        toastr.error(response.data.message)
     }
 }
 
@@ -37,30 +29,17 @@ function changerStatutAutorisation(id, statut) {
         confirmButtonText: 'Oui, continuer'
     }).then((result) => {
         if (result.isConfirmed) {
-            console.log('test')
             // Si l'utilisateur confirme, envoyer la requête Axios
-            axios.get(`/valide-autorisation/${id}/${statut}`)
+            axios.get(`/valide-autorisation/${id}/${statut}`, { params: { 'id': id, 'statut': statut } })
                 .then(response => {
-                    console.log(response)
-                    Swal.fire({
-                        icon: 'success',
-                        title: response.data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                    toastr.success(response.data.message);
                     // Actualiser la DataTable ou effectuer d'autres actions nécessaires
                     table.ajax.reload();
                 })
                 .catch(error => {
                     // En cas d'erreur, afficher une alerte d'erreur SweetAlert
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erreur',
-                        text: 'Une erreur s\'est produite. Veuillez réessayer.',
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
-                    console.error(error);
+                    console.log(error);
+                    toastr.error(error.response.data.message);
                 });
         }
     });
@@ -88,7 +67,7 @@ function updateYearDropdown() {
     var personnelId = $('#personnel_id').val();
 
     // Effectue une requête AJAX pour obtenir les années associées à la personne
-    axios.get('/get-annee/' + personnelId)
+    axios.get('/get-annee/' + personnelId, { params: { 'personnel_id': personnelId } })
         .then(function (response) {
             // Met à jour la liste déroulante de l'année avec les données reçues
             $('#annee').html(response.data);
@@ -105,7 +84,7 @@ function updateCongeRestante(annee = null) {
     return new Promise((resolve, reject) => {
         var personnelId = $('#personnel_id').val();
         // Effectue une requête Axios pour obtenir le congé restant associé à la personne et à l'année
-        axios.get('/get-conge-restants/' + personnelId + '/' + annee)
+        axios.get('/get-conge-restants/' + personnelId + '/' + annee, { params: { 'personnel_id': personnelId, 'annee': annee } })
             .then(function (response) {
                 // Met à jour le champ "jour_restante" avec la valeur reçue
                 var jourRestante = response.data[0];

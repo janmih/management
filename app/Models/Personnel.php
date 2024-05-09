@@ -72,6 +72,11 @@ class Personnel extends Model
         return $this->hasOne(User::class);
     }
 
+    public function cotisationSocialMensuel(): HasMany
+    {
+        return $this->hasMany(CotisationSocialMensuel::class);
+    }
+
     public function getFullNameAttribute(): String
     {
         return $this->nom . ' ' . $this->prenom;

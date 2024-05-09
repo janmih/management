@@ -24,7 +24,6 @@ class ArticleController extends Controller
      */
     public function index(Request $request)
     {
-
         // Vérifie si la requête est une requête AJAX
         if ($request->ajax()) {
             // Récupère tous les services depuis la base de données
@@ -35,7 +34,7 @@ class ArticleController extends Controller
             }
 
             // Utilise DataTables pour formater les données et les renvoyer au client
-            return datatables()->of($article)
+            return datatables()->of($article->get())
                 ->addColumn('service_id', function ($row) {
                     return $row->service->nom;
                 })
@@ -67,7 +66,6 @@ class ArticleController extends Controller
     public function store(ArticleRequest $request)
     {
         if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
-
             try {
                 // Créer une nouvelle entrée dans la base de données avec les données validées du formulaire
                 $article = Article::create($request->validated());

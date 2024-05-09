@@ -22,7 +22,8 @@ class StoreModelHasRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'
+            'personnel_id' => 'integer|exists:personnels,id',
+            'role_id' => 'integer|exists:roles,id',
         ];
     }
 }

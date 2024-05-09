@@ -8,6 +8,7 @@ use App\Models\CotisationSocial;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use App\Jobs\SendMailForCotisationMission;
 use Illuminate\Auth\Access\AuthorizationException;
 
 class CotisationSocialController extends Controller
@@ -82,9 +83,7 @@ class CotisationSocialController extends Controller
                 $to = $cotisation->mission->personnel->email;
                 $montant = $cotisation->montant;
                 $names = $cotisation->mission->personnel->full_name;
-                Mail::to($to)
-                    ->bcc('cacsu.mg@gmail.com')
-                    ->send(new CotisationMail($dates, $montant, $names));
+                SendMailForCotisationMission::dispatch($to, $dates, $montant, $names);
                 return response()->json(['message' => "Paiement vaidé"]);
             } else {
                 // La cotisation est déjà payée, renvoyer un message approprié

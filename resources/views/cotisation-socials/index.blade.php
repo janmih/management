@@ -212,23 +212,11 @@
                     // Si l'utilisateur confirme, effectuer l'action de paiement
                     axios.post('/cotisations/' + id)
                         .then(function(response) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: response.data.message,
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-                            // Actualiser la DataTable ou effectuer d'autres actions nécessaires
+                            toastr.success('Paiement validé')
                             table.ajax.reload();
                         })
                         .catch(function(error) {
-                            Swal.fire({
-                                icon: 'danger',
-                                title: response.data.message,
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-                            // console.error('Erreur lors du paiement:', error);
+                            console.log(error);
                         });
                 }
             });

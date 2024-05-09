@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CongeCumuleRequest;
 use App\Models\Personnel;
 use App\Models\CongeCumule;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -51,27 +53,22 @@ class CongeCumuleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(CongeCumuleRequest $request)
     {
-        try {
-            // Valide les données du formulaire
-            $validatedData = $request->validate([
-                'personnel_id' => 'required|exists:personnels,id',
-                'annee' => 'required|integer',
-                'jour_total' => 'required|integer',
-                'jour_prise' => 'required|integer',
-                'jour_reste' => 'required|integer',
-            ]);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
 
+            try {
+                // Crée un nouveau service avec les données du formulaire
+                CongeCumule::create($request->validalidated());
 
-            // Crée un nouveau service avec les données du formulaire
-            CongeCumule::create($validatedData);
-
-            // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
-            return response()->json(['success' => true, 'message' => 'Nouveau congé créé avec succès'], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la création du congé', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+                // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
+                return response()->json(['success' => true, 'message' => 'Nouveau congé créé avec succès'], Response::HTTP_CREATED);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la création du congé', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -81,32 +78,32 @@ class CongeCumuleController extends Controller
      */
     public function edit(CongeCumule $congeCumule)
     {
-        // Renvoie les données du service au format JSON
-        return response()->json($congeCumule);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            // Renvoie les données du service au format JSON
+            return response()->json($congeCumule);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, CongeCumule $congeCumule)
+    public function update(CongeCumuleRequest $request, CongeCumule $congeCumule)
     {
-        // Validation des champs
-        $validatedData = $request->validate([
-            'personnel_id' => 'required|exists:personnels,id',
-            'annee' => 'required|integer',
-            'jour_total' => 'required|integer',
-            'jour_prise' => 'required|integer',
-            'jour_reste' => 'required|integer',
-        ]);
-
-        try {
-            // Met à jour les données du service
-            $congeCumule->update($validatedData);
-            // Renvoie une réponse JSON indiquant le succès
-            return response()->json(['success' => true, 'message' => 'mis à jour avec succès']);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON avec un message d'erreur
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour', 'error' => $e->getMessage()], 500);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            // Validation des champs
+            try {
+                // Met à jour les données du service
+                $congeCumule->update($request->validated());
+                // Renvoie une réponse JSON indiquant le succès
+                return response()->json(['success' => true, 'message' => 'mis à jour avec succès']);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON avec un message d'erreur
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour', 'error' => $e->getMessage()], 500);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -115,10 +112,13 @@ class CongeCumuleController extends Controller
      */
     public function destroy(CongeCumule $congeCumule)
     {
-        // Supprime le service de la base de données
-        $congeCumule->delete();
-
-        // Renvoie une réponse JSON indiquant le succès
-        return response()->json(['success' => true, 'message' => 'Supprimé avec succès']);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            // Supprime le service de la base de données
+            $congeCumule->delete();
+            // Renvoie une réponse JSON indiquant le succès
+            return response()->json(['success' => true, 'message' => 'Supprimé avec succès']);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 }

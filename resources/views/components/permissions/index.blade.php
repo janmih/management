@@ -16,6 +16,7 @@
                     <div class="form-group">
                         <label for="name">Nom</label>
                         <input type="text" class="form-control" id="name" name="name" required>
+                        <div class="invalid-feedback" id="nameError"></div>
                     </div>
                 </form>
             </div>

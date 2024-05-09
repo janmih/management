@@ -76,11 +76,17 @@
                 },
                 {
                     data: 'date_debut',
-                    name: 'date_debut'
+                    name: 'date_debut',
+                    render: function(data, type, row) {
+                        return new Date(data).toLocaleDateString('fr-FR');
+                    }
                 },
                 {
                     data: 'date_fin',
-                    name: 'date_fin'
+                    name: 'date_fin',
+                    render: function(data, type, row) {
+                        return new Date(data).toLocaleDateString('fr-FR');
+                    }
                 },
                 {
                     data: 'nombre_jour',

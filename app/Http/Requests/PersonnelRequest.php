@@ -33,6 +33,7 @@ class PersonnelRequest extends FormRequest
             'ddn' => 'nullable|date',
             'age' => 'nullable|integer',
             'genre' => 'nullable|string',
+            'service_id' => 'nullable|integer',
             'adresse' => 'nullable|string',
             'email' => 'nullable|email',
             'contact' => 'nullable|string',

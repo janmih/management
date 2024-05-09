@@ -9,6 +9,8 @@ use App\Models\AutorisationAbsence;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Requests\AutorisatonAbsenceRequest;
+use App\Http\Requests\ChangeStatusRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class AutorisationAbsenceController extends Controller
 {
@@ -31,9 +33,9 @@ class AutorisationAbsenceController extends Controller
                     if ($row->status !== 'validated' && $row->status !== 'refused') {
                         if (Auth::user()->hasAnyRole('Chef de service', 'Super Admin')) {
                             $btnValider = '<i onclick="validerAutorisation(' . $row->id . ')" class="btn btn-success btn-sm fa-solid fa-check-to-slot"></i>';
-                            $btnValider .= ' <i class="fa-solid fa-square-xmark btn btn-danger btn-sm" onclick="refuserAutorisation(' . $row->id . ')"></i>';
+                            $btnRefuser = ' <i class="fa-solid fa-square-xmark btn btn-danger btn-sm" onclick="refuserAutorisation(' . $row->id . ')"></i>';
                             // $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openautorisationAbsenceModal(\'edit\', ' . $row->id . ')"><i class="fa-solid fa-pen-clip"></i></button>';
-                            return $btnValider;
+                            return $btnValider . ' ' . $btnRefuser;
                         }
                     }
                 })
@@ -64,7 +66,7 @@ class AutorisationAbsenceController extends Controller
         $mainSegment = $segments[0];
 
         // Si ce n'est pas une requête AJAX, renvoie la vue pour l'affichage normal
-        $personnels = Personnel::select('id', 'nom', 'prenom');
+        $personnels = Personnel::select('id', 'nom', 'prenom')->get();
 
         return view('autorisation-absences.index', compact('mainSegment', 'personnels'));
     }
@@ -100,20 +102,29 @@ class AutorisationAbsenceController extends Controller
     }
 
     // Méthode pour valider ou refuser une autorisation d'absence
-    public function changerStatutAutorisation($id, $status)
+    public function changerStatutAutorisation(ChangeStatusRequest $request)
     {
-        // Mettre à jour le statut de l'autorisation en fonction de l'action demandée
-        $autorisation = AutorisationAbsence::findOrFail($id);
-        $autorisation->status = $status;
-        if ($status == 'refused') {
-            // Retourner une réponse JSON pour indiquer le succès de l'opération
-            $autorisation->jour_reste += $autorisation->jour_prise;
-            $autorisation->jour_prise -=   $autorisation->jour_prise;
+        if (Auth::user()->hasAnyRole(['SSE', 'SPSS', 'SMF', 'Chefferie', 'Super Admin'])) {
+            try {
+                $validatedData = $request->validated();
+                // Mettre à jour le statut de l'autorisation en fonction de l'action demandée
+                $autorisation = AutorisationAbsence::findOrFail($validatedData['id']);
+                $autorisation->status = $validatedData['statut'];
+                if ($validatedData['statut'] == 'refused') {
+                    // Retourner une réponse JSON pour indiquer le succès de l'opération
+                    $autorisation->jour_reste += $autorisation->jour_prise;
+                    $autorisation->jour_prise -=   $autorisation->jour_prise;
+                }
+                $autorisation->save();
+                // Retourner une réponse JSON pour indiquer le succès de l'opération
+                $message = $validatedData['statut'] == 'validated' ? 'Autorisation validée avec succès.' : 'Autorisation refusée avec succès.';
+                return response()->json(['success' => true, 'message' => $message], 200);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'Une erreur s\'est produite', 'error' => $e->getMessage()], 500);
+            }
+        } else {
+            throw new \Exception('Vous n\'avez pas le droit d\'effectuer cette operation', 403);
         }
-        $autorisation->save();
-        // Retourner une réponse JSON pour indiquer le succès de l'opération
-        $message = $status == 'validated' ? 'Autorisation validée avec succès.' : 'Autorisation refusée avec succès.';
-        return response()->json(['success' => true, 'message' => $message], 200);
     }
 
 
@@ -123,41 +134,49 @@ class AutorisationAbsenceController extends Controller
      */
     public function store(AutorisatonAbsenceRequest $request)
     {
-        // Récupérer les données entrantes validées par la classe de requête
-        $data = $request->validated();
+        if (Auth::user()->hasAnyRole('Super Admin', 'Ressource Humaine')) {
+            try {
+                // Récupérer les données entrantes validées par la classe de requête
+                $data = $request->validated();
 
-        // Extraire les champs pertinents de la requête
-        $personnelId = $data['personnel_id'];
-        $dateDebut = Carbon::parse($data['date_debut']);
-        $dateFin = Carbon::parse($data['date_fin']);
+                // Extraire les champs pertinents de la requête
+                $personnelId = $data['personnel_id'];
+                $dateDebut = Carbon::parse($data['date_debut']);
+                $dateFin = Carbon::parse($data['date_fin']);
 
-        // Vérifier si le personnel a déjà pris 3 jours cette semaine
-        $autorisationAbsencesCetteSemaine = AutorisationAbsence::where('personnel_id', $personnelId)
-            ->whereBetween('date_debut', [$dateDebut->startOfWeek(), $dateDebut->endOfWeek()])
-            ->sum('jour_prise');
+                // Vérifier si le personnel a déjà pris 3 jours cette semaine
+                $autorisationAbsencesCetteSemaine = AutorisationAbsence::where('personnel_id', $personnelId)
+                    ->whereBetween('date_debut', [$dateDebut->startOfWeek(), $dateDebut->endOfWeek()])
+                    ->sum('jour_prise');
 
-        // Si le personnel a déjà pris 3 jours cette semaine, renvoyer un message d'erreur
-        if ($autorisationAbsencesCetteSemaine + $data['jour_prise'] > 3) {
-            return response()->json(['message' => 'Le personnel a déjà pris 3 jours cette semaine.'], 422);
+                // Si le personnel a déjà pris 3 jours cette semaine, renvoyer un message d'erreur
+                if ($autorisationAbsencesCetteSemaine + $data['jour_prise'] > 3) {
+                    return response()->json(['message' => 'Le personnel a déjà pris 3 jours cette semaine.'], 422);
+                }
+
+                // Vérifier si le nombre total de jours d'autorisation d'absence demandés ne dépasse pas 15 jours pour cette année
+                $autorisationAbsencesCetteAnnee = AutorisationAbsence::where('personnel_id', $personnelId)
+                    ->whereYear('date_debut', $dateDebut->year)
+                    ->sum('jour_prise');
+
+                // Si le nombre total de jours demandés dépasse 15 jours pour cette année, renvoyer un message d'erreur
+                if ($autorisationAbsencesCetteAnnee + $data['jour_prise'] > 15) {
+                    return response()->json(['message' => 'Le nombre total de jours d\'autorisation d\'absence demandés dépasse 15 jours pour cette année.'], 422);
+                }
+
+                $data['jour_reste'] = $data['jour_reste'] - $data['jour_prise'];
+
+                // Créer une nouvelle autorisation d'absence avec les données validées
+                AutorisationAbsence::create($data);
+
+                // Retourner une réponse JSON indiquant que l'autorisation d'absence a été créée avec succès
+                return response()->json(['success' => true, 'message' => 'Autorisation d\'absence créée avec succès.'], 201);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'Erreur s\'est produite'], $e->getCode());
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'avez pas la permission d\'effectuer cette action');
         }
-
-        // Vérifier si le nombre total de jours d'autorisation d'absence demandés ne dépasse pas 15 jours pour cette année
-        $autorisationAbsencesCetteAnnee = AutorisationAbsence::where('personnel_id', $personnelId)
-            ->whereYear('date_debut', $dateDebut->year)
-            ->sum('jour_prise');
-
-        // Si le nombre total de jours demandés dépasse 15 jours pour cette année, renvoyer un message d'erreur
-        if ($autorisationAbsencesCetteAnnee + $data['jour_prise'] > 15) {
-            return response()->json(['message' => 'Le nombre total de jours d\'autorisation d\'absence demandés dépasse 15 jours pour cette année.'], 422);
-        }
-
-        $data['jour_reste'] = $data['jour_reste'] - $data['jour_prise'];
-
-        // Créer une nouvelle autorisation d'absence avec les données validées
-        AutorisationAbsence::create($data);
-
-        // Retourner une réponse JSON indiquant que l'autorisation d'absence a été créée avec succès
-        return response()->json(['success' => true, 'message' => 'Autorisation d\'absence créée avec succès.'], 201);
     }
 
 
@@ -166,7 +185,11 @@ class AutorisationAbsenceController extends Controller
      */
     public function edit(AutorisatonAbsenceRequest $autorisationAbsence)
     {
-        return response()->json($autorisationAbsence);
+        if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin'])) {
+            return response()->json($autorisationAbsence);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 
     /**
@@ -174,25 +197,30 @@ class AutorisationAbsenceController extends Controller
      */
     public function update(AutorisatonAbsenceRequest $autorisationAbsence)
     {
-        try {
-            // Valider les données de la requête
-            $validatedData = $autorisationAbsence->validate();
+        if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin'])) {
 
-            // Mettre à jour la prise de congé
-            $autorisationAbsence->update($validatedData);
+            try {
+                // Valider les données de la requête
+                $validatedData = $autorisationAbsence->validate();
 
-            // Retourner une réponse de succès avec la prise de congé mise à jour
-            return response()->json([
-                'success' => true,
-                'message' => 'Prise de congé mise à jour avec succès.',
-            ]);
-        } catch (\Exception $e) {
-            // Retourner une réponse d'erreur en cas d'exception
-            return response()->json([
-                'success' => false,
-                'message' => 'Échec de la mise à jour de la prise de congé.',
-                'error' => $e->getMessage(),
-            ], 500);
+                // Mettre à jour la prise de congé
+                $autorisationAbsence->update($validatedData);
+
+                // Retourner une réponse de succès avec la prise de congé mise à jour
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Prise de congé mise à jour avec succès.',
+                ]);
+            } catch (\Exception $e) {
+                // Retourner une réponse d'erreur en cas d'exception
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Échec de la mise à jour de la prise de congé.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -203,22 +231,26 @@ class AutorisationAbsenceController extends Controller
      */
     public function destroy(AutorisatonAbsenceRequest $autorisationAbsence)
     {
-        try {
-            // Supprimer la prise de congé
-            $autorisationAbsence->delete();
+        if (Auth::user()->hasAnyRole(['Ressource Humaine', 'Super Admin'])) {
+            try {
+                // Supprimer la prise de congé
+                $autorisationAbsence->delete();
 
-            // Retourner une réponse de succès
-            return response()->json([
-                'success' => true,
-                'message' => 'Prise de congé supprimée avec succès.',
-            ]);
-        } catch (\Exception $e) {
-            // Retourner une réponse d'erreur en cas d'exception
-            return response()->json([
-                'success' => false,
-                'message' => 'Échec de la suppression de la prise de congé.',
-                'error' => $e->getMessage(),
-            ], 500);
+                // Retourner une réponse de succès
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Prise de congé supprimée avec succès.',
+                ]);
+            } catch (\Exception $e) {
+                // Retourner une réponse d'erreur en cas d'exception
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Échec de la suppression de la prise de congé.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 }

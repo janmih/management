@@ -10,8 +10,13 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class ArticleImport implements ToCollection, WithHeadingRow
 {
+
     /**
-     * @param Collection $collection
+     * Perform a collection operation on the provided data.
+     *
+     * @param Collection $collection The collection of data to process
+     * @throws Some_Exception_Class Description of exception if any
+     * @return Some_Return_Value Description of the return value if any
      */
     public function collection(Collection $collection)
     {
@@ -32,7 +37,6 @@ class ArticleImport implements ToCollection, WithHeadingRow
                 "etat_article" => $row['etat_article'],
             ]);
             // Vérifier si l'article existe dans la table etat_stocks
-            // $etatStock = EtatStock::where(article_id->reference, $row['reference'])->first();
             $etatStock = EtatStock::whereHas('article', function ($query) use ($row) {
                 $query->where('reference', $row['reference']);
             })->first();
@@ -51,7 +55,6 @@ class ArticleImport implements ToCollection, WithHeadingRow
                     'stock_final' => $row['entree']
                 ]);
             }
-            // dd($etatStock);
         }
     }
 }

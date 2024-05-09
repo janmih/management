@@ -31,15 +31,18 @@
                                     <tr>
                                         <th>Name</th>
                                         <th>Email</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                @foreach($users as $user)
-                                    <tr>
-                                        <td>{{ $user->name }}</td>
-                                        <td>{{ $user->email }}</td>
-                                    </tr>
-                                @endforeach
+                                    @foreach ($users as $user)
+                                        <tr>
+                                            <td>{{ $user->name }}</td>
+                                            <td>{{ $user->email }}</td>
+                                            <td><a href="{{ route('profile.edit', $user->id) }}"
+                                                    class="btn btn-sm btn-info"><i class="fas fa fa-pencil"></i></a></td>
+                                        </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>

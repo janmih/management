@@ -28,27 +28,16 @@ function reposJourTotal() {
         return;
     }
 
-    // Calcul de la différence en jours en excluant les week-ends
-    var differenceJours = 0;
+    // Calcul de la différence en millisecondes
+    var differenceMS = dateFin - dateDebut;
 
-    while (dateDebut < dateFin) {
-        // Vérifiez si le jour actuel n'est pas un samedi (6) ou un dimanche (0)
-        if (dateDebut.getDay() !== 6 && dateDebut.getDay() !== 0) {
-            differenceJours++;
-        }
-        // Ajoutez un jour à la date de début
-        dateDebut.setDate(dateDebut.getDate() + 1);
-    }
-
-    // Afficher la différence
-    // console.log("Différence de jours (en excluant les week-ends) : ", differenceJours);
-
-    // Vous pouvez également afficher la différence dans un élément HTML si nécessaire
-    // document.getElementById("resultat_difference").innerText = "Différence de jours : " + differenceJours;
+    // Convertir la différence en jours
+    var differenceJours = Math.floor(differenceMS / (1000 * 60 * 60 * 24)) + 1;
 
     // Afficher la différence
     document.getElementById("nombre_jour").value = differenceJours;
 }
+
 
 function congePrise() {
     // Obtenez les valeurs des champs de date
@@ -101,9 +90,6 @@ function calculJourPrise() {
     // Afficher la différence dans le champ "nombre_jour"
     document.getElementById("jour_prise").value = differenceJours;
 }
-
-
-
 
 function congeCumuleDiff() {
     var jt = document.getElementById("jour_total").value;

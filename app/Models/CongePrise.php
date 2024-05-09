@@ -15,16 +15,8 @@ class CongePrise extends Model
     use HasFactory, SoftDeletes, Userstamps, HasRoles;
 
 
-    protected $fillable = [
-        'cc_id',
-        'personnel_id',
-        'annee',
-        'date_debut',
-        'date_fin',
-        'nombre_jour',
-        'created_by',
-        'updated_by',
-        'deleted_by',
+    protected $guarded = [
+        'id',
     ];
 
     // Relationships

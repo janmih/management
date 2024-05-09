@@ -6,7 +6,10 @@ use App\Models\Personnel;
 use App\Models\ReposMedical;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Requests\ReposMedicalRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class ReposMedicalController extends Controller
 {
@@ -26,9 +29,13 @@ class ReposMedicalController extends Controller
                     return $row->personnel->nom . ' ' . $row->personnel->prenom;
                 })
                 ->addColumn('action', function ($row) {
-                    $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openReposMedicalModal(\'edit\', ' . $row->id . ')">Éditer</button>';
-                    $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteReposMedical(' . $row->id . ')">Supprimer</button>';
-                    return $btnEditer . ' ' . $btnSupprimer;
+                    if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openReposMedicalModal(\'edit\', ' . $row->id . ')">Éditer</button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteReposMedical(' . $row->id . ')">Supprimer</button>';
+                        return $btnEditer . ' ' . $btnSupprimer;
+                    } else {
+                        return '';
+                    }
                 })
                 ->rawColumns(['action'])
                 ->make(true);
@@ -47,26 +54,22 @@ class ReposMedicalController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ReposMedicalRequest $request)
     {
-        try {
-            $validatedData = $request->validate([
-                'personnel_id' => 'required|exists:personnels,id',
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
-                'nombre_jour' => 'required|integer',
-                'motif' => 'required|string',
-                'observation' => 'nullable|string',
-            ]);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
 
-            // Crée un nouveau service avec les données du formulaire
-            ReposMedical::create($validatedData);
+            try {
+                // Crée un nouveau service avec les données du formulaire
+                ReposMedical::create($request->validated());
 
-            // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
-            return response()->json(['success' => true, 'message' => 'Créé avec succès'], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la création', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+                // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
+                return response()->json(['success' => true, 'message' => 'Créé avec succès'], Response::HTTP_CREATED);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la création', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -77,33 +80,33 @@ class ReposMedicalController extends Controller
      */
     public function edit(ReposMedical $reposMedical)
     {
-        // Renvoie les données du service au format JSON
-        return response()->json($reposMedical);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            // Renvoie les données du service au format JSON
+            return response()->json($reposMedical);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ReposMedical $reposMedical)
+    public function update(ReposMedicalRequest $request, ReposMedical $reposMedical)
     {
-        try {
-            $validatedData = $request->validate([
-                'personnel_id' => 'required|exists:personnels,id',
-                'date_debut' => 'required|date',
-                'date_fin' => 'required|date|after_or_equal:date_debut',
-                'nombre_jour' => 'required|integer',
-                'motif' => 'required|string',
-                'observation' => 'nullable|string',
-            ]);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
 
-            // Crée un nouveau service avec les données du formulaire
-            $reposMedical->update($validatedData);
+            try {
+                // Crée un nouveau service avec les données du formulaire
+                $reposMedical->update($request->validated());
 
-            // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
-            return response()->json(['success' => true, 'message' => 'mis à jour avec succès'], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+                // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
+                return response()->json(['success' => true, 'message' => 'mis à jour avec succès'], Response::HTTP_CREATED);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -112,7 +115,11 @@ class ReposMedicalController extends Controller
      */
     public function destroy(ReposMedical $reposMedical)
     {
-        $reposMedical->delete();
-        return response()->json(['success' => true, 'message' => 'Supprimé avec succès']);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            $reposMedical->delete();
+            return response()->json(['success' => true, 'message' => 'Supprimé avec succès']);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 }

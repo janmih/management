@@ -22,11 +22,13 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <button type="button" class="btn btn-primary" data-toggle="modal"
-                                onclick="openautorisationAbsenceModal('add')" data-target="#autorisationAbsenceModal">
-                                Ajouter
-                            </button>
-                            <x-autorisation-absences.index :personnels="$personnels" />
+                            @hasanyrole('Ressource Humaine|Super Admin')
+                                <button type="button" class="btn btn-primary" data-toggle="modal"
+                                    onclick="openautorisationAbsenceModal('add')" data-target="#autorisationAbsenceModal">
+                                    Ajouter
+                                </button>
+                                <x-autorisation-absences.index :personnels="$personnels" />
+                            @endhasanyrole
                         </div>
 
                         <div class="card-body table-responsive">
@@ -42,7 +44,9 @@
                                         <th>Motif</th>
                                         <th>Observation</th>
                                         <th>Status</th>
-                                        <th class="no-export col-1">Actions</th>
+                                        @hasanyrole('Ressource Humaine|Super Admin|SSE|SPSS|SMF|Chefferie')
+                                            <th class="no-export col-1">Actions</th>
+                                        @endhasanyrole
                                     </tr>
                                 </thead>
                             </table>
@@ -75,11 +79,17 @@
                 },
                 {
                     data: 'date_debut',
-                    name: 'date_debut'
+                    name: 'date_debut',
+                    render: function(data, type, row) {
+                        return new Date(data).toLocaleDateString('fr-FR');
+                    }
                 },
                 {
                     data: 'date_fin',
-                    name: 'date_fin'
+                    name: 'date_fin',
+                    render: function(data, type, row) {
+                        return new Date(data).toLocaleDateString('fr-FR');
+                    }
                 },
                 {
                     data: 'jour_prise',
@@ -122,12 +132,14 @@
                         return '<div class="' + colorClass + '">' + data + '</div>' + actionButtons;
                     }
                 },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false
-                }
+                @hasanyrole('Ressource Humaine|Super Admin|SSE|SPSS|SMF|Chefferie')
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
+                @endhasanyrole
             ],
             dom: 'Bfrtip',
             buttons: [{
@@ -173,111 +185,103 @@
 
             ],
         });
+        @hasanyrole('Ressource Humaine|Super Admin')
+            function openautorisationAbsenceModal(action, id = null) {
+                // console.log('Ouverture de la modal avec action :', action);
+                // Réinitialiser le formulaire
+                $('#autorisationAbsenceForm')[0].reset();
 
-        function openautorisationAbsenceModal(action, id = null) {
-            // console.log('Ouverture de la modal avec action :', action);
-            // Réinitialiser le formulaire
-            $('#autorisationAbsenceForm')[0].reset();
+                // Modifier le titre de la modal en fonction de l'action
+                $('#autorisationAbsenceModalLabel').text(action === 'add' ? 'Ajouter une autorisation d\'absence' :
+                    'Modifier une autorisation d\'absence');
 
-            // Modifier le titre de la modal en fonction de l'action
-            $('#autorisationAbsenceModalLabel').text(action === 'add' ? 'Ajouter une autorisation d\'absence' :
-                'Modifier une autorisation d\'absence');
+                // Modifier l'action du formulaire en fonction de l'action
+                $('#autorisationAbsenceForm').attr('action', action === 'add' ?
+                    '{{ route('autorisation-absences.store') }}' :
+                    '{{ route('autorisation-absences.update', ':id') }}'.replace(':id', id));
 
-            // Modifier l'action du formulaire en fonction de l'action
-            $('#autorisationAbsenceForm').attr('action', action === 'add' ?
-                '{{ route('autorisation-absences.store') }}' :
-                '{{ route('autorisation-absences.update', ':id') }}'.replace(':id', id));
+                // Pré-remplir les champs si l'action est 'edit'
+                if (action === 'edit') {
+                    axios.get('{{ route('autorisation-absences.edit', ':id') }}'.replace(':id', id))
+                        .then(response => {
+                            const autorisationAbsences = response.data;
+                            $('#personnel_id').val(autorisationAbsences.personnel_id)
+                            $('#date_debut').val(autorisationAbsences.date_debut)
+                            $('#date_fin').val(autorisationAbsences.date_fin)
+                            $('#jour_prise').val(autorisationAbsences.jour_prise)
+                            $('#jour_reste').val(autorisationAbsences.jour_reste)
+                            $('#motif').val(autorisationAbsences.motif)
+                            $('#observation').val(autorisationAbsences.observation)
+                        })
+                        .catch(error => {
+                            toastr.error(error.response.data.message)
+                        });
+                }
 
-            // Pré-remplir les champs si l'action est 'edit'
-            if (action === 'edit') {
-                axios.get('{{ route('autorisation-absences.edit', ':id') }}'.replace(':id', id))
+                // Ouvrir la modal
+                $('#autorisationAbsenceModal').modal('show');
+            }
+
+            function deleteautorisationAbsence(autorisationAbsenceId) {
+                Swal.fire({
+                    title: 'Êtes-vous sûr?',
+                    text: 'La suppression du service est irréversible!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, supprimer!',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Effectuer la suppression avec Axios
+                        axios.delete(`/autorisation-absences/${autorisationAbsenceId}`)
+                            .then(response => {
+                                toastr.success(response.data.message);
+                                $('#autorisationAbsenceModal').modal('hide')
+                                table.ajax.reload();
+                            })
+                            .catch(error => {
+                                // Gestion des erreurs d'Axios
+                                toastr.error(error.response.data.message)
+                            });
+                    }
+                });
+            }
+
+            function saveautorisationAbsence() {
+                // Récupérer l'action du formulaire
+                const action = $('#autorisationAbsenceForm').attr('action');
+
+                // Effectuer la requête en fonction de l'action (ajout ou modification)
+                axios({
+                        method: action === '{{ route('autorisation-absences.store') }}' ? 'post' : 'patch',
+                        url: action,
+                        data: $('#autorisationAbsenceForm').serialize(),
+                    })
                     .then(response => {
-                        const autorisationAbsences = response.data;
-                        $('#personnel_id').val(autorisationAbsences.personnel_id)
-                        $('#date_debut').val(autorisationAbsences.date_debut)
-                        $('#date_fin').val(autorisationAbsences.date_fin)
-                        $('#jour_prise').val(autorisationAbsences.jour_prise)
-                        $('#jour_reste').val(autorisationAbsences.jour_reste)
-                        $('#motif').val(autorisationAbsences.motif)
-                        $('#observation').val(autorisationAbsences.observation)
+                        toastr.success(response.data.message);
+                        $('#autorisationAbsenceModal').modal('hide')
+                        table.ajax.reload();
                     })
                     .catch(error => {
-                        console.error(error);
+                        // Gestion des erreurs d'Axios
+                        toastr.error(error.response.data.message)
                     });
             }
 
-            // Ouvrir la modal
-            $('#autorisationAbsenceModal').modal('show');
-        }
-
-        function deleteautorisationAbsence(autorisationAbsenceId) {
-            Swal.fire({
-                title: 'Êtes-vous sûr?',
-                text: 'La suppression du service est irréversible!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Oui, supprimer!',
-                cancelButtonText: 'Annuler'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Effectuer la suppression avec Axios
-                    axios.delete(`/autorisation-absences/${autorisationAbsenceId}`)
-                        .then(response => {
-                            handleServerResponse(response, 'Supprimé avec succès!', $(
-                                '#autorisationAbsenceModal'));
-                        })
-                        .catch(error => {
-                            // Gestion des erreurs d'Axios
-                            console.error(error);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Erreur lors de la suppression',
-                                text: 'Veuillez réessayer!',
-                                showConfirmButton: true
-                            });
-                        });
-                }
+            // Gère le changement de la liste déroulante du personnel
+            $('#personnel_id').change(function() {
+                updateJourReste(); // Met à jour la liste déroulante de l'année
             });
-        }
-
-        function saveautorisationAbsence() {
-            // Récupérer l'action du formulaire
-            const action = $('#autorisationAbsenceForm').attr('action');
-
-            // Effectuer la requête en fonction de l'action (ajout ou modification)
-            axios({
-                    method: action === '{{ route('autorisation-absences.store') }}' ? 'post' : 'patch',
-                    url: action,
-                    data: $('#autorisationAbsenceForm').serialize(),
-                })
-                .then(response => {
-                    handleServerResponse(response, 'Enregistré avec succès!', $('#autorisationAbsenceModal'));
-                })
-                .catch(error => {
-                    // Gestion des erreurs d'Axios
-                    console.error(error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erreur lors de l\'enregistrement',
-                        text: 'Veuillez réessayer!',
-                        showConfirmButton: true
-                    });
-                });
-        }
-
-        // Gère le changement de la liste déroulante du personnel
-        $('#personnel_id').change(function() {
-            updateJourReste(); // Met à jour la liste déroulante de l'année
-        });
-
-        function validerAutorisation(id) {
-            changerStatutAutorisation(id, 'validated');
-        }
-
-        // Fonction pour refuser une autorisation
-        function refuserAutorisation(id) {
-            changerStatutAutorisation(id, 'refused');
-        }
+        @endhasanyrole
+        @hasanyrole('Super Admin|SSE|SPSS|SMF|Chefferie')
+            function validerAutorisation(id) {
+                changerStatutAutorisation(id, 'validated');
+            }
+            // Fonction pour refuser une autorisation
+            function refuserAutorisation(id) {
+                changerStatutAutorisation(id, 'refused');
+            }
+        @endhasanyrole
     </script>
 @endsection
 @endsection

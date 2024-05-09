@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cotisations_mensuelles', function (Blueprint $table) {
+        Schema::create('cotisation_social_mensuels', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('personnel_id');
-            $table->foreign('personnel_id')->references('id_personnel')->on('personnels');
+            $table->foreign('personnel_id')->references('id')->on('personnels');
             $table->char('mois');
             $table->integer('montant')->default('3000');
             $table->unsignedBigInteger('created_by')->nullable();

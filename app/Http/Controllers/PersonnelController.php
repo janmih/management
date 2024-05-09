@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\PersonnelRequest;
-use App\Http\Requests\PersonnelUpdateRequest;
-use App\Models\Personnel;
+use App\Models\User;
 use App\Models\Service;
+use App\Models\Personnel;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Requests\PersonnelRequest;
+use App\Http\Requests\PersonnelUpdateRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class PersonnelController extends Controller
 {
@@ -29,9 +33,13 @@ class PersonnelController extends Controller
                     return $row->service->nom;
                 })
                 ->addColumn('action', function ($row) {
-                    $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openPersonnelModal(\'edit\', ' . $row->id . ')">Éditer</button>';
-                    $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deletePersonnel(' . $row->id . ')">Supprimer</button>';
-                    return $btnEditer . ' ' . $btnSupprimer;
+                    if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openPersonnelModal(\'edit\', ' . $row->id . ')">Éditer</button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deletePersonnel(' . $row->id . ')">Supprimer</button>';
+                        return $btnEditer . ' ' . $btnSupprimer;
+                    } else {
+                        return '';
+                    }
                 })
                 ->rawColumns(['action'])
                 ->make(true);
@@ -56,14 +64,29 @@ class PersonnelController extends Controller
      */
     public function store(PersonnelRequest $request)
     {
-        // info($request->all());
-        try {
-            Personnel::create($request->validated());
-            // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
-            return response()->json(['success' => true, 'message' => 'Nouveau personnel créé avec succès'], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la création du personnel', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            try {
+                $validateData = $request->validated();
+                $fullName = $validateData['nom'] . ' ' . $validateData['prenom'];
+                Personnel::create($validateData);
+                User::create([
+                    'name' => $fullName,
+                    'email' => $request->email,
+                    'email_verified_at' => now(),
+                    'password' => Hash::make('password'),
+                    'role' => 'User',
+                    'service_id' => $request->service_id,
+                    'remember_token' => Str::random(10),
+                ]);
+
+                // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
+                return response()->json(['success' => true, 'message' => 'Nouveau personnel créé avec succès'], Response::HTTP_CREATED);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la création du personnel', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -72,8 +95,12 @@ class PersonnelController extends Controller
      */
     public function edit(Personnel $personnel)
     {
-        // Renvoie les données du personnel au format JSON
-        return response()->json($personnel);
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            // Renvoie les données du personnel au format JSON
+            return response()->json($personnel);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 
     /**
@@ -85,15 +112,20 @@ class PersonnelController extends Controller
      */
     public function update(PersonnelUpdateRequest $request, Personnel $personnel)
     {
-        try {
-            // Mettre à jour le personnel avec les données du formulaire
-            $personnel->update($request->validated());
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
 
-            // Renvoie une réponse JSON indiquant le succès avec le code de statut 200 (OK)
-            return response()->json(['success' => true, 'message' => 'Personnel mis à jour avec succès'], Response::HTTP_OK);
-        } catch (\Exception $e) {
-            // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour du personnel', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            try {
+                // Mettre à jour le personnel avec les données du formulaire
+                $personnel->update($request->validated());
+
+                // Renvoie une réponse JSON indiquant le succès avec le code de statut 200 (OK)
+                return response()->json(['success' => true, 'message' => 'Personnel mis à jour avec succès'], Response::HTTP_OK);
+            } catch (\Exception $e) {
+                // En cas d'erreur, renvoie une réponse JSON indiquant l'échec avec le code de statut 500 (Internal Server Error)
+                return response()->json(['success' => false, 'message' => 'Erreur lors de la mise à jour du personnel', 'error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
         }
     }
 
@@ -102,10 +134,14 @@ class PersonnelController extends Controller
      */
     public function destroy(Personnel $personnel)
     {
-        // Supprime le personnel de la base de données
-        $personnel->delete();
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            // Supprime le personnel de la base de données
+            $personnel->delete();
 
-        // Renvoie une réponse JSON indiquant le succès
-        return response()->json(['success' => true, 'message' => 'Personnel supprimé avec succès']);
+            // Renvoie une réponse JSON indiquant le succès
+            return response()->json(['success' => true, 'message' => 'Personnel supprimé avec succès']);
+        } else {
+            throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');
+        }
     }
 }

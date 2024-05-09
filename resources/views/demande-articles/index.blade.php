@@ -247,7 +247,7 @@
             ]
         });
 
-        let commander = (article, id = {{ $personnel_id }}) => {
+        let commander = (article, personnel_id = {{ $personnel_id }}) => {
             let article_id = article.article_id;
             let stock_final = article.stock_final;
             let quantityInput = $('#quantity_' + article.article_id);
@@ -260,7 +260,7 @@
 
             axios.get('/demande-articles/ajouter', {
                     params: {
-                        id: id,
+                        personnel_id: personnel_id,
                         article_id: article_id,
                         quantity: quantity
                     }
@@ -268,7 +268,7 @@
                 .then(function(response) {
                     toastr.success(response.data.message)
                     table.ajax.reload()
-                    quantity.val('')
+                    quantityInput.val('')
                 })
                 .catch(function(error) {
                     // Gérer les erreurs

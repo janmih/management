@@ -49,7 +49,7 @@ class PermissionController extends Controller
                 return response()->json(['message' => 'Enregistrement réussi'], 200);
             } catch (\Exception $e) {
                 // Retourner une réponse JSON avec un message d'erreur en cas d'échec de la création dans la base de données
-                return response()->json(['message' => 'Une erreur est survenue lors du Enregistrement. Veuillez réessayer.', 'error' => $e], 500);
+                return response()->json(['error' => $e], 500);
             }
         } else {
             throw new AuthorizationException('You are not authorized to access this resource.');

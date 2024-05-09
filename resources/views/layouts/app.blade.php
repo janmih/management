@@ -27,7 +27,7 @@
     <div class="wrapper">
 
         <!-- Navbar -->
-        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <nav class="main-header navbar navbar-expand navbar-light navbar-light">
             <!-- Left navbar links -->
             <ul class="navbar-nav">
                 <li class="nav-item">
@@ -43,7 +43,7 @@
                         {{ Auth::user()->name }}
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" style="left: inherit; right: 0px;">
-                        <a href="{{ route('profile.show') }}" class="dropdown-item">
+                        <a href="{{ route('profile.edit', Auth::user()->id) }}" class="dropdown-item">
                             <i class="mr-2 fas fa-file"></i>
                             {{ __('My profile') }}
                         </a>
@@ -63,12 +63,13 @@
         <!-- /.navbar -->
 
         <!-- Main Sidebar Container -->
-        <aside class="main-sidebar sidebar-dark-warning elevation-4">
+        <aside class="main-sidebar sidebar-dark-navy elevation-4">
             <!-- Brand Logo -->
             <a href="{{ route('home') }}" class="brand-link">
                 <img src="{{ asset('images/CACSU.png') }}" id="logo" alt="CACSU Logo"
-                    class="brand-image img-circle elevation-3" style="opacity: .8">
-                <h3 class="brand-text font-weight-bold" style="color: #F5EDCE">CACSU</h3>
+                    class="brand-image img-circle elevation-2" style="opacity: .8">
+                <h2 class="brand-text font-weight-bold" style="color: #41C9E2;align: center; margin-top: -10px;">CACSU
+                </h2>
             </a>
 
             @include('layouts.navigation')
@@ -126,6 +127,7 @@
     <script src="{{ asset('js/all.min.js') }}"></script>
     <!-- Inclure le JavaScript de DataTables Responsive -->
     <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
 
 
     @yield('scripts')
