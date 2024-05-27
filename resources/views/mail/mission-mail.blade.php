@@ -1,20 +1,21 @@
 @component('mail::message')
-    # Convocation pour une mission
+    <h1>Convocation pour une mission</h1>
+    <p>Cher/Chère {!! $fullName !!},</p>
 
-    Cher/Chère {{ $fullName }},
+    <p>Nous avons le plaisir de vous convier à une mission qui se tiendra du {!! $date_debut !!} au
+        {!! $date_fin !!}.</p>
 
-    Nous avons le plaisir de vous convier à une mission qui se tiendra du {{ $date_debut }} au {{ $date_fin }}.
+    <p><strong>Lieu de la mission :</strong> {!! $lieu !!}</p>
 
-    <strong>Lieu de la mission :</strong> {{ $lieu }}
+    <p><strong>Observations :</strong><br>
+        {!! $observations !!}</p>
 
-    <strong>Observations :</strong>
-    {{ $observations }}
+    <p>Nous comptons sur votre présence active et votre contribution pour le succès de cette mission.</p>
 
-    Nous comptons sur votre présence active et votre contribution pour le succès de cette mission.
+    <p><em>N'oublier pas notre cotisation sociale de 10.000 Ariary, qui est à payer auprès de Monsieur José une fois la
+            mission
+            terminée.</em></p>
 
-    <em>N'oublier pas notre cotisation sociale de 10.000 Ariary, qui est à payer auprès de Monsieur José une fois la mission
-        terminée.</em>
-
-    Cordialement,
-    {{ config('app.name') }}
+    <p>Cordialement,<br>
+        {!! config('app.name') !!}</p>
 @endcomponent
