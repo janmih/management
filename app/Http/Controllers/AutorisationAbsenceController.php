@@ -32,8 +32,8 @@ class AutorisationAbsenceController extends Controller
                 ->addColumn('action', function ($row) {
                     if ($row->status !== 'validated' && $row->status !== 'refused') {
                         if (Auth::user()->hasAnyRole('Chef de service', 'Super Admin')) {
-                            $btnValider = '<i onclick="validerAutorisation(' . $row->id . ')" class="btn btn-success btn-sm fa-solid fa-check-to-slot"></i>';
-                            $btnRefuser = ' <i class="fa-solid fa-square-xmark btn btn-danger btn-sm" onclick="refuserAutorisation(' . $row->id . ')"></i>';
+                            $btnValider = '<i onclick="validerAutorisation(' . $row->id . ')" class="btn btn-success btn-sm fa-solid fa-check-to-slot" title="Valider"></i>';
+                            $btnRefuser = ' <i class="fa-solid fa-square-xmark btn btn-danger btn-sm" onclick="refuserAutorisation(' . $row->id . ')" title="Refuser"></i>';
                             // $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openautorisationAbsenceModal(\'edit\', ' . $row->id . ')"><i class="fa-solid fa-pen-clip"></i></button>';
                             return $btnValider . ' ' . $btnRefuser;
                         }

@@ -31,8 +31,8 @@ class CongeCumuleController extends Controller
                 })
                 ->addColumn('action', function ($row) {
                     if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongeCumuleModal(\'edit\', ' . $row->id . ')"><i class="fa-solid fa-pencil"></i></button>';
-                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongeCumule(' . $row->id . ')"><i class="fa-solid fa-trash"></i></button>';
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongeCumuleModal(\'edit\', ' . $row->id . ')" title="Éditer"><i class="fa-solid fa-pencil"></i></button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongeCumule(' . $row->id . ')" title="Supprimer"><i class="fa-solid fa-trash"></i></button>';
                         return $btnEditer . ' ' . $btnSupprimer;
                     }
                 })

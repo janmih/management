@@ -30,8 +30,8 @@ class StockServiceController extends Controller
                     return $row->service->nom;
                 })
                 ->addColumn('actions', function ($row) {
-                    $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openStockServiceModal(\'edit\', ' . $row->id_stock_service . ')">Éditer</button>';
-                    $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteStockService(' . $row->id_stock_service . ')">Supprimer</button>';
+                    $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openStockServiceModal(\'edit\', ' . $row->id_stock_service . ')" title="Editer"><i class="fas fa-pencil"></i></button>';
+                    $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteStockService(' . $row->id_stock_service . ')" title="Supprimer"><i class="fas fa-trash"></i></button>';
                     return $btnEditer . ' ' . $btnSupprimer;
                 })
                 ->rawColumns(['actions'])

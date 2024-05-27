@@ -46,10 +46,10 @@ class CotisationSocialController extends Controller
                 ->addColumn('action', function ($cotisation) {
                     if ($cotisation->status !== 'payé') {
                         if (Auth::user()->hasAnyRole('Trésorier', 'Super Admin')) {
-                            return '<button class="btn btn-info mb-3" onclick="payerCotisation(' . $cotisation->id . ')">Payer</button>';
+                            return '<i class="fas fa-money-bill-wave btn btn-info mb-3" onclick="payerCotisation(' . $cotisation->id . ')" title="Payer"></i>';
                         }
                     } else {
-                        return '<button class="btn btn-success mb-3" disabled>Payé</button>';
+                        return '<button class="btn btn-success mb-3" disabled><i class="fa-solid fa-circle-check"></i></button>';
                     }
                 })
                 ->rawColumns(['action'])

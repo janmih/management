@@ -29,12 +29,12 @@ class MissionController extends Controller
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($mission)
                 ->addColumn('personnel_id', function ($row) {
-                    return $row->personnel->nom . ' ' . $row->personnel->prenom;
+                    return $row->personnel->full_name ?? 'N/A';
                 })
                 ->addColumn('action', function ($row) {
                     if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin', 'Trésorier', 'Secrétaire')) {
-                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openMissionModal(\'edit\', ' . $row->id . ')"><i class="fas fa-pencil"></i></button>';
-                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteMission(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openMissionModal(\'edit\', ' . $row->id . ')" title="Éditer"><i class="fas fa-pencil"></i></button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteMission(' . $row->id . ')" title="Supprimer"><i class="fas fa-trash"></i></button>';
                         return $btnEditer . ' ' . $btnSupprimer;
                     } else {
                         return '';
@@ -88,7 +88,7 @@ class MissionController extends Controller
                 DB::commit();
                 $person = Mission::with('personnel')->find($mission->id)->first();
                 $to = $person->personnel->email;
-                $fullName = $person->personnel->nom . ' ' . $person->personnel->prenom;
+                $fullName = $person->personnel->full_name;
                 $date_debut = $validatedData['date_debut'];
                 $date_fin = $validatedData['date_fin'];
                 $lieu = $validatedData['lieu'];

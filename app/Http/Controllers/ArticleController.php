@@ -40,8 +40,8 @@ class ArticleController extends Controller
                 })
                 ->addColumn('actions', function ($row) {
                     if (Auth::user()->hasAnyRole('Depositaire Comptable', 'Super Admin')) {
-                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openArticleModal(\'edit\', ' . $row->id . ')"><i class="fas fa-pencil"></i></button>';
-                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteArticle(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openArticleModal(\'edit\', ' . $row->id . ')" title="Éditer"><i class="fas fa-pencil"></i></button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteArticle(' . $row->id . ')" title="Supprimer"><i class="fas fa-trash"></i></button>';
                         return $btnEditer . ' ' . $btnSupprimer;
                     } else {
                         return '';

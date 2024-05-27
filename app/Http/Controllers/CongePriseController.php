@@ -35,12 +35,12 @@ class CongePriseController extends Controller
                 ->addColumn('action', function ($row) {
                     if ($row->status == 'stand by') {
                         if (Auth::user()->hasAnyRole(['SSE', 'SMF', 'SPSS', 'Chefferie', 'Super Admin'])) {
-                            $btnValider = '<button class="btn btn-success btn-sm mb-3" onclick="validerConge(' . $row->id . ')"><i class="fas fa-circle-check"></i></button>';
+                            $btnValider = '<button class="btn btn-success btn-sm mb-3" onclick="validerConge(' . $row->id . ')" title="Valider"><i class="fas fa-circle-check"></i></button>';
                         } else {
                             $btnValider = '';
                         }
-                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongePriseModal(\'edit\', ' . $row->id . ')"><i class="fas fa-pen"></i></button>';
-                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongePrise(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongePriseModal(\'edit\', ' . $row->id . ')" title="Éditer"><i class="fas fa-pen"></i></button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongePrise(' . $row->id . ')" title="Supprimer"><i class="fas fa-trash"></i></button>';
 
                         return $btnValider . ' ' . $btnEditer . ' ' . $btnSupprimer;
                     }
