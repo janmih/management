@@ -39,7 +39,6 @@
                                     class="display table table-bordered table-striped dataTable dtr-inline">
                                     <thead>
                                         <tr>
-                                            <th><input type="checkbox" id="select-all"></th>
                                             <th>Personnel</th>
                                             <th>Année</th>
                                             <th>Jour Total</th>
