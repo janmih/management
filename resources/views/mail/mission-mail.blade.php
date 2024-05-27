@@ -1,4 +1,12 @@
-@component('mail::message')
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Convocation pour une mission</title>
+</head>
+
+<body>
     <h1>Convocation pour une mission</h1>
     <p>Cher/Chère {!! $fullName !!},</p>
 
@@ -18,4 +26,6 @@
 
     <p>Cordialement,<br>
         {!! config('app.name') !!}</p>
-@endcomponent
+</body>
+
+</html>
