@@ -86,13 +86,15 @@ class MissionController extends Controller
 
                 // Valide toutes les opérations dans la transaction
                 DB::commit();
-                $person = Mission::with('personnel')->find($mission->id)->first();
-                $to = $person->personnel->email;
-                $fullName = $person->personnel->full_name;
+                // $person = Mission::with('personnel')->find($mission->id)->first();
+                $person = Personnel::findOrFail($validatedData['personnel_id'])->first();
+                $to = $person->email;
+                $fullName = $person->full_name;
                 $date_debut = $validatedData['date_debut'];
                 $date_fin = $validatedData['date_fin'];
                 $lieu = $validatedData['lieu'];
                 $observations = $validatedData['observation'];
+
                 SendMailForMissionJob::dispatch($to, $fullName, $date_debut, $date_fin, $lieu, $observations);
                 // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
                 return response()->json(['success' => true, 'message' => 'Créé avec succès'], Response::HTTP_CREATED);
