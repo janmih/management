@@ -33,8 +33,8 @@ class MissionController extends Controller
                 })
                 ->addColumn('action', function ($row) {
                     if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin', 'Trésorier', 'Secrétaire')) {
-                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openMissionModal(\'edit\', ' . $row->id . ')">Éditer</button>';
-                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteMission(' . $row->id . ')">Supprimer</button>';
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openMissionModal(\'edit\', ' . $row->id . ')"><i class="fas fa-pencil"></i></button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteMission(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
                         return $btnEditer . ' ' . $btnSupprimer;
                     } else {
                         return '';
