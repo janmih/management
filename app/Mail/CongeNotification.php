@@ -9,20 +9,17 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class HeloMail extends Mailable
+class CongeNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $listMaterielValider;
-    public $nombreArticles;
-
+    public $name;
     /**
      * Create a new message instance.
      */
-    public function __construct($listMaterielValider, $nombreArticles)
+    public function __construct($name)
     {
-        $this->listMaterielValider = $listMaterielValider;
-        $this->nombreArticles = $nombreArticles;
+        $this->name = $name;
     }
 
     /**
@@ -31,7 +28,7 @@ class HeloMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Demande articles approuvés',
+            subject: 'Conge Notification',
         );
     }
 
@@ -41,7 +38,7 @@ class HeloMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mails.index',
+            markdown: 'mail.conge-notification',
         );
     }
 

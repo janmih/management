@@ -2,24 +2,25 @@
 
 namespace App\Jobs;
 
-use App\Mail\HeloMail;
 use Illuminate\Bus\Queueable;
+use App\Mail\CongeNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
-class SendEmailNotificationJob implements ShouldQueue
+class CongeNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    protected $listMaterielValider;
+
+    public $name;
     /**
      * Create a new job instance.
      */
-    public function __construct($listMaterielValider)
+    public function __construct($name)
     {
-        $this->listMaterielValider = $listMaterielValider;
+        $this->name = $name;
     }
 
     /**
@@ -27,7 +28,8 @@ class SendEmailNotificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Mail::to(['cacsu.mg@gmail.com'])
-            ->send(new HeloMail($this->listMaterielValider, $this->listMaterielValider->count()));
+        Mail::to('dratsiambakaina@yahoo.fr')
+            ->cc(['cacsu.mg@gmail.com', $this->name->email])
+            ->send(new CongeNotification($this->name->full_name));
     }
 }

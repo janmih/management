@@ -25,7 +25,7 @@ class AutorisationAbsenceController extends Controller
             $autorisationAbsence = AutorisationAbsence::with('personnel:id,nom,prenom');
 
             // Utilise DataTables pour formater les données et les renvoyer au client
-            return datatables()->of($autorisationAbsence)
+            return datatables()->of($autorisationAbsence->get())
                 ->addColumn('personnel_id', function ($row) {
                     return $row->personnel->nom . ' ' . $row->personnel->prenom;
                 })

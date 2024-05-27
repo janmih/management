@@ -12,6 +12,7 @@ use App\Http\Requests\CongePriseRequest;
 use App\Http\Requests\GetCongeRestanteRequest;
 use App\Http\Requests\GetYearRequest;
 use App\Http\Requests\ValideCongeRequest;
+use App\Jobs\CongeNotificationJob;
 use Illuminate\Auth\Access\AuthorizationException;
 
 class CongePriseController extends Controller
@@ -29,7 +30,7 @@ class CongePriseController extends Controller
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($congeCumule)
                 ->addColumn('personnel_id', function ($row) {
-                    return $row->personnel->nom . ' ' . $row->personnel->prenom;
+                    return $row->personnel->full_name ?? 'N/A';
                 })
                 ->addColumn('action', function ($row) {
                     if ($row->status == 'stand by') {
@@ -38,13 +39,9 @@ class CongePriseController extends Controller
                         } else {
                             $btnValider = '';
                         }
-                        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-                            $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongePriseModal(\'edit\', ' . $row->id . ')"><i class="fas fa-pen"></i></button>';
-                            $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongePrise(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
-                        } else {
-                            $btnEditer = '';
-                            $btnSupprimer = '';
-                        }
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongePriseModal(\'edit\', ' . $row->id . ')"><i class="fas fa-pen"></i></button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongePrise(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+
                         return $btnValider . ' ' . $btnEditer . ' ' . $btnSupprimer;
                     }
                 })
@@ -58,8 +55,11 @@ class CongePriseController extends Controller
         $mainSegment = $segments[0];
 
         // Si ce n'est pas une requête AJAX, renvoie la vue pour l'affichage normal
-        $personnels = Personnel::all();
-
+        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+            $personnels = Personnel::all();
+        } else {
+            $personnels = Personnel::where('email', Auth::user()->email)->get();
+        }
         return view('conge-prises.index', compact('mainSegment', 'personnels'));
     }
 
@@ -89,20 +89,16 @@ class CongePriseController extends Controller
      */
     public function getYears(GetYearRequest $request)
     {
-        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-            $validatedData = $request->validated();
-            // Récupère les années associées au personnel depuis la base de données
-            $years = CongeCumule::where('personnel_id', $validatedData['personnel_id'])->pluck('annee');
-            // Crée une chaîne HTML pour les options de la liste déroulante
-            $options = '<option value="">Veuillez choisir</option>';
-            foreach ($years as $year) {
-                $options .= '<option value="' . $year . '">' . $year . '</option>';
-            }
-
-            return $options;
-        } else {
-            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
+        $validatedData = $request->validated();
+        // Récupère les années associées au personnel depuis la base de données
+        $years = CongeCumule::where('personnel_id', $validatedData['personnel_id'])->pluck('annee');
+        // Crée une chaîne HTML pour les options de la liste déroulante
+        $options = '<option value="">Veuillez choisir</option>';
+        foreach ($years as $year) {
+            $options .= '<option value="' . $year . '">' . $year . '</option>';
         }
+
+        return $options;
     }
 
     /**
@@ -114,20 +110,16 @@ class CongePriseController extends Controller
      */
     public function getCongeRestante(GetCongeRestanteRequest $request)
     {
-        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-            // Retrieve the validated data
-            $validatedData = $request->validated();
+        // Retrieve the validated data
+        $validatedData = $request->validated();
 
-            // Retrieve the remaining leave associated with the personnel and year from the database
-            $congeRestante = CongeCumule::where('personnel_id', $validatedData['personnel_id'])
-                ->where('annee', $validatedData['annee'])
-                ->pluck('jour_reste');
-            // Récupère le congé restant associé au personnel et à l'année depuis la base de données
+        // Retrieve the remaining leave associated with the personnel and year from the database
+        $congeRestante = CongeCumule::where('personnel_id', $validatedData['personnel_id'])
+            ->where('annee', $validatedData['annee'])
+            ->pluck('jour_reste');
+        // Récupère le congé restant associé au personnel et à l'année depuis la base de données
 
-            return response()->json($congeRestante);
-        } else {
-            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
-        }
+        return response()->json($congeRestante);
     }
 
     /**
@@ -135,51 +127,50 @@ class CongePriseController extends Controller
      */
     public function store(CongePriseRequest $request)
     {
-        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-            try {
-                // Valider les données de la requête
-                $validatedData = $request->validated();
+        try {
+            // Valider les données de la requête
+            $validatedData = $request->validated();
+            $personnels = Personnel::where('id', $validatedData['personnel_id'])->firstOrFail();
 
-                // Calculer le nombre de jours pris à partir de la table conge_cumule
-                $congeCumule = CongeCumule::where('personnel_id', $validatedData['personnel_id'])
-                    ->where('annee', $validatedData['annee'])
-                    ->firstOrFail();
+            // Calculer le nombre de jours pris à partir de la table conge_cumule
+            $congeCumule = CongeCumule::where('personnel_id', $validatedData['personnel_id'])
+                ->where('annee', $validatedData['annee'])
+                ->firstOrFail();
 
-                $jourPrise = $congeCumule->jour_prise + $validatedData['nombre_jour'];
+            $jourPrise = $congeCumule->jour_prise + $validatedData['nombre_jour'];
 
-                // Vérifier si le nombre de jours pris dépasse le nombre total de jours disponibles
-                if ($jourPrise > $congeCumule->jour_total) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Le nombre de jours pris dépasse le nombre total de jours disponibles.',
-                    ], 422);
-                }
-
-                // Créer une nouvelle instance de la prise de congé
-                $newPriseConge = CongePrise::create($validatedData);
-
-                // Mettre à jour le nombre de jours pris dans la table conge_cumule
-                $congeCumule->update([
-                    'jour_prise' => $jourPrise,
-                    'jour_reste' => $congeCumule->jour_total - $jourPrise,
-                ]);
-
-                // Retourner une réponse de succès avec la nouvelle prise de congé
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Prise de congé enregistrée avec succès.',
-                    'data' => $newPriseConge,
-                ], 201);
-            } catch (\Exception $e) {
-                // Retourner une réponse d'erreur en cas d'exception
+            // Vérifier si le nombre de jours pris dépasse le nombre total de jours disponibles
+            if ($jourPrise > $congeCumule->jour_total) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Échec de l\'enregistrement de la prise de congé.',
-                    'error' => $e->getMessage(),
-                ], 500);
+                    'message' => 'Le nombre de jours pris dépasse le nombre total de jours disponibles.',
+                ], 422);
             }
-        } else {
-            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
+
+            // Créer une nouvelle instance de la prise de congé
+            $newPriseConge = CongePrise::create($validatedData);
+
+            // Mettre à jour le nombre de jours pris dans la table conge_cumule
+            $congeCumule->update([
+                'jour_prise' => $jourPrise,
+                'jour_reste' => $congeCumule->jour_total - $jourPrise,
+            ]);
+
+            CongeNotificationJob::dispatch($personnels);
+
+            // Retourner une réponse de succès avec la nouvelle prise de congé
+            return response()->json([
+                'success' => true,
+                'message' => 'Prise de congé enregistrée avec succès.',
+                'data' => $newPriseConge,
+            ], 201);
+        } catch (\Exception $e) {
+            // Retourner une réponse d'erreur en cas d'exception
+            return response()->json([
+                'success' => false,
+                'message' => 'Échec de l\'enregistrement de la prise de congé.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -189,11 +180,7 @@ class CongePriseController extends Controller
      */
     public function edit(CongePrise $congePrise)
     {
-        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-            return response()->json($congePrise);
-        } else {
-            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
-        }
+        return response()->json($congePrise);
     }
 
     /**
@@ -201,45 +188,40 @@ class CongePriseController extends Controller
      */
     public function update(CongePriseRequest $request, CongePrise $congePrise)
     {
-        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
+        try {
+            // Valider les données de la requête
+            $validatedData = $request->validate();
 
-            try {
-                // Valider les données de la requête
-                $validatedData = $request->validate();
+            // Mettre à jour la prise de congé
+            $congePrise->update($validatedData);
 
-                // Mettre à jour la prise de congé
-                $congePrise->update($validatedData);
+            // Mettre à jour le nombre de jours pris dans la table conge_cumule
+            $congeCumule = CongeCumule::where('personnel_id', $congePrise->personnel_id)
+                ->where('annee', $congePrise->annee)
+                ->firstOrFail();
 
-                // Mettre à jour le nombre de jours pris dans la table conge_cumule
-                $congeCumule = CongeCumule::where('personnel_id', $congePrise->personnel_id)
-                    ->where('annee', $congePrise->annee)
-                    ->firstOrFail();
+            // Créer une nouvelle instance de la prise de congé
+            $newPriseConge = CongePrise::create($validatedData);
 
-                // Créer une nouvelle instance de la prise de congé
-                $newPriseConge = CongePrise::create($validatedData);
+            // Mettre à jour le nombre de jours pris dans la table conge_cumule
+            $congeCumule->update([
+                'jour_prise' => $validatedData['nombre_jour'],
+                'jour_reste' => $congeCumule->jour_total - $validatedData['nombre_jour'],
+            ]);
 
-                // Mettre à jour le nombre de jours pris dans la table conge_cumule
-                $congeCumule->update([
-                    'jour_prise' => $validatedData['nombre_jour'],
-                    'jour_reste' => $congeCumule->jour_total - $validatedData['nombre_jour'],
-                ]);
-
-                // Retourner une réponse de succès avec la prise de congé mise à jour
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Prise de congé mise à jour avec succès.',
-                    'data' => $congePrise->refresh(), // Rafraîchir les données de la prise de congé
-                ]);
-            } catch (\Exception $e) {
-                // Retourner une réponse d'erreur en cas d'exception
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Échec de la mise à jour de la prise de congé.',
-                    'error' => $e->getMessage(),
-                ], 500);
-            }
-        } else {
-            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
+            // Retourner une réponse de succès avec la prise de congé mise à jour
+            return response()->json([
+                'success' => true,
+                'message' => 'Prise de congé mise à jour avec succès.',
+                'data' => $congePrise->refresh(), // Rafraîchir les données de la prise de congé
+            ]);
+        } catch (\Exception $e) {
+            // Retourner une réponse d'erreur en cas d'exception
+            return response()->json([
+                'success' => false,
+                'message' => 'Échec de la mise à jour de la prise de congé.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -250,35 +232,31 @@ class CongePriseController extends Controller
      */
     public function destroy(CongePrise $congePrise)
     {
-        if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-            try {
-                // Mettre à jour le nombre de jours restants dans la table conge_cumule
-                $congeCumule = CongeCumule::where('personnel_id', $congePrise->personnel_id)
-                    ->where('annee', $congePrise->annee)
-                    ->firstOrFail();
+        try {
+            // Mettre à jour le nombre de jours restants dans la table conge_cumule
+            $congeCumule = CongeCumule::where('personnel_id', $congePrise->personnel_id)
+                ->where('annee', $congePrise->annee)
+                ->firstOrFail();
 
-                $congeCumule->update([
-                    'jour_reste' => $congeCumule->jour_reste + $congePrise->nombre_jour, // Ajouter les jours supprimés
-                    'jour_prise' =>  $congeCumule->jour_prise - $congePrise->nombre_jour
-                ]);
-                // Supprimer la prise de congé
-                $congePrise->delete();
+            $congeCumule->update([
+                'jour_reste' => $congeCumule->jour_reste + $congePrise->nombre_jour, // Ajouter les jours supprimés
+                'jour_prise' =>  $congeCumule->jour_prise - $congePrise->nombre_jour
+            ]);
+            // Supprimer la prise de congé
+            $congePrise->delete();
 
-                // Retourner une réponse de succès
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Prise de congé supprimée avec succès.',
-                ]);
-            } catch (\Exception $e) {
-                // Retourner une réponse d'erreur en cas d'exception
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Échec de la suppression de la prise de congé.',
-                    'error' => $e->getMessage(),
-                ], 500);
-            }
-        } else {
-            throw new AuthorizationException('Vous n\'êtes pas autorisé à accéder à cette ressource.');
+            // Retourner une réponse de succès
+            return response()->json([
+                'success' => true,
+                'message' => 'Prise de congé supprimée avec succès.',
+            ]);
+        } catch (\Exception $e) {
+            // Retourner une réponse d'erreur en cas d'exception
+            return response()->json([
+                'success' => false,
+                'message' => 'Échec de la suppression de la prise de congé.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

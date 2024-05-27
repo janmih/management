@@ -44,8 +44,10 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::middleware('auth')->group(function () {
     Route::view('about', 'about')->name('about');
 
-    Route::get('users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
-    Route::resource('profile', ProfileController::class)->only(['show', 'edit', 'update']);
+    Route::group(['middleware' => ['can:Users.manage']], function () {
+        Route::get('users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+        Route::resource('profile', ProfileController::class)->only(['show', 'edit', 'update']);
+    });
     // Route::get('profile/{user_id}', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     // Route::put('profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::view('exportheader', 'exportheader')->name('exportheader');
@@ -74,23 +76,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/get-autorisation-restants/{personnelId}/{annee}', [AutorisationAbsenceController::class, 'getAutorisationRestants']);
     Route::get('/valide-autorisation/{autirisationId}/{status}', [AutorisationAbsenceController::class, 'changerStatutAutorisation']);
 
-    Route::group(['middleware' => ['can:Article.manage']], function () {
-        Route::post('/articles/import', [ArticleController::class, 'importArticle'])->name('article.import');
-        Route::post('/stock-services/import', [StockServiceController::class, 'importFile'])->name('stock-services.import');
-    });
-
-    Route::group(['middleware' => ['can:Admin.manage']], function () {
-        Route::resource('/roles', RoleController::class)->only(['index', 'store']);
-        Route::resource('/permissions', PermissionController::class)->only(['index', 'store']);
-        Route::resource('/model-has-roles', ModelHasRoleController::class)->only(['index', 'store']);
-    });
+    Route::post('/articles/import', [ArticleController::class, 'importArticle'])->name('article.import');
+    Route::post('/stock-services/import', [StockServiceController::class, 'importFile'])->name('stock-services.import');
+    Route::resource('/roles', RoleController::class)->only(['index', 'store']);
+    Route::resource('/permissions', PermissionController::class)->only(['index', 'store']);
+    Route::resource('/model-has-roles', ModelHasRoleController::class)->only(['index', 'store']);
 
     Route::get('/liste-article-bons/{personnel_id}', [DemandeArticleController::class, 'listeArticleBons'])->name('liste-article-bons.index');
-    Route::group(['middleware' => ['can:Liste-bons.manage']], function () {
-        Route::get('/liste-bons', [DemandeArticleController::class, 'listeBons'])->name('liste-bons.index');
-        Route::get('/demande-valide/{id}', [DemandeArticleController::class, 'valide'])->name('demande-valider.index');
-        Route::get('/demande-refuse/{id}', [DemandeArticleController::class, 'refus'])->name('demande-refuser.index');
-        Route::get('/notify', [DemandeArticleController::class, "notify"])->name('notify.index');
-        Route::view('/mails', 'mails.index');
-    });
+    Route::get('/liste-bons', [DemandeArticleController::class, 'listeBons'])->name('liste-bons.index');
+    Route::get('/notify', [DemandeArticleController::class, "notify"])->name('notify.index');
+    Route::get('/demande-valide/{id}', [DemandeArticleController::class, 'valide'])->name('demande-valider.index');
+    Route::get('/demande-refuse/{id}', [DemandeArticleController::class, 'refus'])->name('demande-refuser.index');
+    Route::view('/mails', 'mails.index');
 });

@@ -4,13 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\EtatStock;
 use App\Models\Personnel;
+use App\Mail\NotifyArticle;
 use Illuminate\Http\Request;
+use App\Jobs\NotifyArticleJob;
 use App\Models\DemandeArticle;
+use Illuminate\Support\Facades\DB;
+use App\Jobs\ArticleNotificationJob;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\AjouterRequest;
+use App\Mail\UsersArtcileNotifcation;
 use Illuminate\Support\Facades\Route;
 use App\Jobs\SendEmailNotificationJob;
 use App\Jobs\SendMailAfterValidateArticle;
+use App\Mail\ArticleNotification;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\DepositaireNotification;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -28,12 +35,14 @@ class DemandeArticleController extends Controller
             if (Auth::user()->hasAnyRole(['Depositaire Comptable', 'Super Admin'])) {
                 $stock = EtatStock::with('article');
             } else {
-                $stock = EtatStock::whereHas('article', function ($query) {
-                    $query->where('service_id', Auth::user()->service_id);
-                })->load('article');
+                $stock = EtatStock::join('articles', 'etat_stocks.article_id', '=', 'articles.id')
+                    ->where('articles.service_id', Auth::user()->service_id)
+                    ->select('etat_stocks.*')
+                    ->with('article')
+                    ->get();
             }
             // Utilise DataTables pour formater les données et les renvoyer au client
-            return datatables()->of($stock->get())
+            return datatables()->of($stock)
                 ->addColumn('article_id', function ($row) {
                     return optional($row->article)->designation ?? '';
                 })
@@ -95,17 +104,30 @@ class DemandeArticleController extends Controller
     {
         if ($request->ajax()) {
             // Récupère tous les services depuis la base de données
-            $personnels = Personnel::select('personnels.*')
-                ->leftJoin('users', 'personnels.user_id', '=', 'users.id')
-                ->leftJoin('services', 'personnels.service_id', '=', 'services.id')
-                ->whereIn('personnels.id', function ($query) {
-                    $query->select('personnel_id')
-                        ->from('demande_articles')
-                        ->where('demande_articles.status', 'En attente');
-                })
-                ->where('services.id', auth()->user()->service_id)
-                ->whereNull('personnels.deleted_at')
-                ->get();
+            if (Auth::user()->hasRole('Super Admin')) {
+                $personnels = Personnel::select('personnels.*')
+                    ->leftJoin('users', 'personnels.user_id', '=', 'users.id')
+                    ->leftJoin('services', 'personnels.service_id', '=', 'services.id')
+                    ->whereIn('personnels.id', function ($query) {
+                        $query->select('personnel_id')
+                            ->from('demande_articles')
+                            ->where('demande_articles.status', 'En attente');
+                    })
+                    ->whereNull('personnels.deleted_at')
+                    ->get();
+            } else {
+                $personnels = Personnel::select('personnels.*')
+                    ->leftJoin('users', 'personnels.user_id', '=', 'users.id')
+                    ->leftJoin('services', 'personnels.service_id', '=', 'services.id')
+                    ->whereIn('personnels.id', function ($query) {
+                        $query->select('personnel_id')
+                            ->from('demande_articles')
+                            ->where('demande_articles.status', 'En attente');
+                    })
+                    ->where('services.id', auth()->user()->service_id)
+                    ->whereNull('personnels.deleted_at')
+                    ->get();
+            }
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($personnels)
                 ->addColumn('personnel', function ($row) {
@@ -210,18 +232,25 @@ class DemandeArticleController extends Controller
     /**
      * @return \Illuminate\Http\JsonResponse
      */
-    public function notify()
+    public function notify(Request $request)
     {
         if (Auth::user()->hasAnyRole(['SSE', 'SPSS', 'SMF', 'Chefferie', 'Super Admin'])) {
-
-            $listMaterielValider = DemandeArticle::where('status', 'Valider')
-                ->whereHas('personnel', function ($query) {
-                    $query->where('user_id', auth()->user()->id);
-                })
-                ->with('personnel', 'article', 'personnel.service')
+            // Récupère l'id du demande dans l'url
+            $segments = explode('/', $request->header('referer'));
+            $personnel = Personnel::where('id', end($segments))->first();
+            $materiels_valider = DemandeArticle::select('articles.designation', 'demande_articles.quantity')
+                ->leftJoin('articles', 'demande_articles.article_id', '=', 'articles.id')
+                ->where('personnel_id', end($segments))
+                ->where('status', 'Valider')
                 ->where('livrer', 'Non')
                 ->get();
-            SendMailAfterValidateArticle::dispatch($listMaterielValider);
+            $materiels_refuser = DemandeArticle::select('articles.designation', 'demande_articles.quantity')
+                ->leftJoin('articles', 'demande_articles.article_id', '=', 'articles.id')
+                ->where('personnel_id', end($segments))
+                ->where('status', 'refuser')
+                ->where('livrer', 'Non')
+                ->get();
+            ArticleNotificationJob::dispatch($personnel, $materiels_valider->toArray(), $materiels_refuser->toArray());
             return response()->json(['success' => true, "message" => "Notification envoyer"]);
         } else {
             throw new AuthorizationException('Vous n\'etes pas autorisé à accéder à cette ressource.');

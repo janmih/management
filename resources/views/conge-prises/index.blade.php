@@ -22,13 +22,11 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            @hasanyrole('Ressource Humaine|Super Admin')
-                                <button type="button" class="btn btn-primary" data-toggle="modal"
-                                    onclick="openCongePriseModal('add')" data-target="#congePriseModal">
-                                    Ajouter
-                                </button>
-                                <x-conge-prises.index :personnels="$personnels" />
-                            @endhasanyrole
+                            <button type="button" class="btn btn-primary" data-toggle="modal"
+                                onclick="openCongePriseModal('add')" data-target="#congePriseModal">
+                                Ajouter
+                            </button>
+                            <x-conge-prises.index :personnels="$personnels" />
                         </div>
 
                         <div class="card-body">
@@ -68,7 +66,9 @@
     <script>
         let table = new DataTable('#congePriseTable', {
             processing: true,
-            // serverSide: true,
+            order: [
+                [4, 'desc']
+            ],
             ajax: "{{ route('conge-prises.index') }}",
             columns: [{
                     data: 'personnel_id',
@@ -110,14 +110,12 @@
                         }
                     }
                 },
-                @hasanyrole('Ressource Humaine|Super Admin|SSE|SPSS|SMF|Chefferie')
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
-                @endhasanyrole
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                }
             ],
             dom: 'Bfrtip',
             select: true,
@@ -173,123 +171,122 @@
 
             ]
         });
-        @hasanyrole('Ressource Humaine|Super Admin')
-            function openCongePriseModal(action, id = null) {
-                // console.log('Ouverture de la modal avec action :', action);
-                // Réinitialiser le formulaire
-                $('#congePriseForm')[0].reset();
 
-                // Modifier le titre de la modal en fonction de l'action
-                $('#congePriseModalLabel').text(action === 'add' ? 'Ajouter un congé' : 'Modifier un congé');
+        function openCongePriseModal(action, id = null) {
+            // console.log('Ouverture de la modal avec action :', action);
+            // Réinitialiser le formulaire
+            $('#congePriseForm')[0].reset();
 
-                // Modifier l'action du formulaire en fonction de l'action
-                $('#congePriseForm').attr('action', action === 'add' ? '{{ route('conge-prises.store') }}' :
-                    '{{ route('conge-prises.update', ':id') }}'.replace(':id', id));
+            // Modifier le titre de la modal en fonction de l'action
+            $('#congePriseModalLabel').text(action === 'add' ? 'Ajouter un congé' : 'Modifier un congé');
 
-                // Pré-remplir les champs si l'action est 'edit'
-                if (action === 'edit') {
-                    axios.get('{{ route('conge-prises.edit', ':id') }}'.replace(':id', id))
-                        .then(response => {
-                            const congePrises = response.data;
-                            $('#personnel_id').val(congePrises.personnel_id)
-                            $('#date_debut').val(congePrises.date_debut)
-                            $('#date_fin').val(congePrises.date_fin)
-                            $('#nombre_jour').val(congePrises.nombre_jour)
-                            // Pré-remplir le champ "année" avec la valeur récupérée de la base de données
-                            $('#annee').val(congePrises.annee);
+            // Modifier l'action du formulaire en fonction de l'action
+            $('#congePriseForm').attr('action', action === 'add' ? '{{ route('conge-prises.store') }}' :
+                '{{ route('conge-prises.update', ':id') }}'.replace(':id', id));
 
-                            // Enregistrer la valeur de l'année récupérée de la base de données
-                            $('#annee').data('selected-year', congePrises.annee);
+            // Pré-remplir les champs si l'action est 'edit'
+            if (action === 'edit') {
+                axios.get('{{ route('conge-prises.edit', ':id') }}'.replace(':id', id))
+                    .then(response => {
+                        const congePrises = response.data;
+                        $('#personnel_id').val(congePrises.personnel_id)
+                        $('#date_debut').val(congePrises.date_debut)
+                        $('#date_fin').val(congePrises.date_fin)
+                        $('#nombre_jour').val(congePrises.nombre_jour)
+                        // Pré-remplir le champ "année" avec la valeur récupérée de la base de données
+                        $('#annee').val(congePrises.annee);
 
-                            // Mettre à jour la liste déroulante de l'année en fonction du personnel sélectionné
-                            updateYearDropdown();
+                        // Enregistrer la valeur de l'année récupérée de la base de données
+                        $('#annee').data('selected-year', congePrises.annee);
 
-                            // Appeler la fonction pour récupérer le nombre de jours restants
-                            updateCongeRestante(congePrises.annee)
-                                .then(jourRestante => {
-                                    // Enregistrer la valeur du nombre de jours restants récupérée de la base de données
-                                    $('#jour_restante').data('selected-jour-restante', jourRestante);
+                        // Mettre à jour la liste déroulante de l'année en fonction du personnel sélectionné
+                        updateYearDropdown();
 
-                                    // Sélectionner automatiquement le nombre de jours restants correspondant à la valeur récupérée de la base de données
-                                    selectJourRestanteFromDatabaseValue();
-                                })
-                                .catch(error => {
-                                    console.error(error);
-                                });
-                        })
-                        .catch(error => {
-                            console.error(error);
-                        });
-                }
+                        // Appeler la fonction pour récupérer le nombre de jours restants
+                        updateCongeRestante(congePrises.annee)
+                            .then(jourRestante => {
+                                // Enregistrer la valeur du nombre de jours restants récupérée de la base de données
+                                $('#jour_restante').data('selected-jour-restante', jourRestante);
 
-                // Ouvrir la modal
-                $('#congePriseModal').modal('show');
-            }
-
-            function deleteCongePrise(congePriseId) {
-                Swal.fire({
-                    title: 'Êtes-vous sûr?',
-                    text: 'La suppression du service est irréversible!',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Oui, supprimer!',
-                    cancelButtonText: 'Annuler'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Effectuer la suppression avec Axios
-                        axios.delete(`/conge-prises/${congePriseId}`)
-                            .then(response => {
-                                handleServerResponse(response, 'Supprimé avec succès!', $('#congePriseModal'));
+                                // Sélectionner automatiquement le nombre de jours restants correspondant à la valeur récupérée de la base de données
+                                selectJourRestanteFromDatabaseValue();
                             })
                             .catch(error => {
-                                // Gestion des erreurs d'Axios
                                 console.error(error);
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Erreur lors de la suppression',
-                                    text: 'Veuillez réessayer!',
-                                    showConfirmButton: true
-                                });
                             });
-                    }
-                });
-            }
-
-            function saveCongePrise() {
-                // Récupérer l'action du formulaire
-                const action = $('#congePriseForm').attr('action');
-
-                // Effectuer la requête en fonction de l'action (ajout ou modification)
-                axios({
-                        method: action === '{{ route('conge-prises.store') }}' ? 'post' : 'patch',
-                        url: action,
-                        data: $('#congePriseForm').serialize(),
-                    })
-                    .then(response => {
-                        handleServerResponse(response, 'Congé enregistré avec succès!', $('#congePriseModal'));
                     })
                     .catch(error => {
-                        // Gestion des erreurs d'Axios
                         console.error(error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Erreur lors de l\'enregistrement',
-                            text: 'Veuillez réessayer!',
-                            showConfirmButton: true
-                        });
                     });
             }
 
-            // Gère le changement de la liste déroulante du personnel
-            $('#personnel_id').change(function() {
-                updateYearDropdown(); // Met à jour la liste déroulante de l'année
-            });
+            // Ouvrir la modal
+            $('#congePriseModal').modal('show');
+        }
 
-            // Gère le changement de la liste déroulante de l'année
-            $('#annee').change(function() {
-                updateCongeRestante($('#annee').val()); // Met à jour le champ "conge_restante"
+        function deleteCongePrise(congePriseId) {
+            Swal.fire({
+                title: 'Êtes-vous sûr?',
+                text: 'La suppression du service est irréversible!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, supprimer!',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Effectuer la suppression avec Axios
+                    axios.delete(`/conge-prises/${congePriseId}`)
+                        .then(response => {
+                            handleServerResponse(response, 'Supprimé avec succès!', $('#congePriseModal'));
+                        })
+                        .catch(error => {
+                            // Gestion des erreurs d'Axios
+                            console.error(error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erreur lors de la suppression',
+                                text: 'Veuillez réessayer!',
+                                showConfirmButton: true
+                            });
+                        });
+                }
             });
-        @endhasanyrole
+        }
+
+        function saveCongePrise() {
+            // Récupérer l'action du formulaire
+            const action = $('#congePriseForm').attr('action');
+
+            // Effectuer la requête en fonction de l'action (ajout ou modification)
+            axios({
+                    method: action === '{{ route('conge-prises.store') }}' ? 'post' : 'patch',
+                    url: action,
+                    data: $('#congePriseForm').serialize(),
+                })
+                .then(response => {
+                    handleServerResponse(response, 'Congé enregistré avec succès!', $('#congePriseModal'));
+                })
+                .catch(error => {
+                    // Gestion des erreurs d'Axios
+                    console.error(error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erreur lors de l\'enregistrement',
+                        text: 'Veuillez réessayer!',
+                        showConfirmButton: true
+                    });
+                });
+        }
+
+        // Gère le changement de la liste déroulante du personnel
+        $('#personnel_id').change(function() {
+            updateYearDropdown(); // Met à jour la liste déroulante de l'année
+        });
+
+        // Gère le changement de la liste déroulante de l'année
+        $('#annee').change(function() {
+            updateCongeRestante($('#annee').val()); // Met à jour le champ "conge_restante"
+        });
         @hasanyrole('SSE|SPSS|SMF|Chefferie|Super Admin')
             function validerConge(congePriseId) {
                 Swal.fire({

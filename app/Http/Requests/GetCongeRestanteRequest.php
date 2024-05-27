@@ -12,7 +12,7 @@ class GetCongeRestanteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin');
+        return true;
     }
 
     /**

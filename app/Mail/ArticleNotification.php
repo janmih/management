@@ -8,26 +8,24 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 
-class SendMailForMission extends Mailable implements ShouldQueue
+class ArticleNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    protected $fullName;
-    protected $date_debut;
-    protected $date_fin;
-    protected $lieu;
-    protected $observations;
+    public $personnel;
+    public $materiels_valider;
+    public $materiels_refuser;
+
     /**
      * Create a new message instance.
      */
-    public function __construct($fullName, $date_debut, $date_fin, $lieu, $observations)
+    public function __construct($personnel, $materiels_valider, $materiels_refuser)
     {
-        $this->fullName = $fullName;
-        $this->date_debut = $date_debut;
-        $this->date_fin = $date_fin;
-        $this->lieu = $lieu;
-        $this->observations = $observations;
+        $this->personnel = $personnel;
+        $this->materiels_valider = $materiels_valider;
+        $this->materiels_refuser = $materiels_refuser;
     }
 
     /**
@@ -36,7 +34,7 @@ class SendMailForMission extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Mission',
+            subject: 'Notification CACSU',
         );
     }
 
@@ -46,14 +44,7 @@ class SendMailForMission extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'mails.mission',
-            with: [
-                'fullName' => $this->fullName,
-                'date_debut' => $this->date_debut,
-                'date_fin' => $this->date_fin,
-                'lieu' => $this->lieu,
-                'observations' => $this->observations
-            ]
+            markdown: 'mail.article-notification',
         );
     }
 

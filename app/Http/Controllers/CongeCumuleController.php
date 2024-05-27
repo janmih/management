@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CongeCumuleRequest;
+use App\Jobs\CongeNotificationJob;
 use App\Models\Personnel;
 use App\Models\CongeCumule;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -26,12 +27,12 @@ class CongeCumuleController extends Controller
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($congeCumule)
                 ->addColumn('personnel_id', function ($row) {
-                    return $row->personnel->nom . ' ' . $row->personnel->prenom;
+                    return $row->personnel->full_name ?? 'N/D';
                 })
                 ->addColumn('action', function ($row) {
                     if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
-                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongeCumuleModal(\'edit\', ' . $row->id . ')">Éditer</button>';
-                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongeCumule(' . $row->id . ')">Supprimer</button>';
+                        $btnEditer = '<button class="btn btn-warning btn-sm mb-3" onclick="openCongeCumuleModal(\'edit\', ' . $row->id . ')"><i class="fa-solid fa-pencil"></i></button>';
+                        $btnSupprimer = '<button class="btn btn-danger btn-sm mb-3" onclick="deleteCongeCumule(' . $row->id . ')"><i class="fa-solid fa-trash"></i></button>';
                         return $btnEditer . ' ' . $btnSupprimer;
                     }
                 })
@@ -59,7 +60,7 @@ class CongeCumuleController extends Controller
 
             try {
                 // Crée un nouveau service avec les données du formulaire
-                CongeCumule::create($request->validalidated());
+                CongeCumule::create($request->validated());
 
                 // Renvoie une réponse JSON indiquant le succès avec le code de statut 201 (Created)
                 return response()->json(['success' => true, 'message' => 'Nouveau congé créé avec succès'], Response::HTTP_CREATED);

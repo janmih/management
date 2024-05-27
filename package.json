@@ -17,8 +17,15 @@
         "vite": "^5.0.12"
     },
     "dependencies": {
+        "datatables.net": "^2.0.7",
+        "datatables.net-buttons": "^3.0.2",
+        "datatables.net-dt": "^2.0.7",
+        "datatables.net-responsive": "^3.0.2",
         "form-data": "^4.0.0",
+        "jszip": "^3.10.1",
+        "pdfmake": "^0.2.10",
         "select2": "^4.1.0-rc.0",
+        "sweetalert2": "^11.6.13",
         "toastr": "^2.1.4"
     }
 }

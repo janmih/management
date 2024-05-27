@@ -26,7 +26,7 @@ class ReposMedicalController extends Controller
             // Utilise DataTables pour formater les données et les renvoyer au client
             return datatables()->of($congeCumule)
                 ->addColumn('personnel_id', function ($row) {
-                    return $row->personnel->nom . ' ' . $row->personnel->prenom;
+                    return $row->personnel->full_name;
                 })
                 ->addColumn('action', function ($row) {
                     if (Auth::user()->hasAnyRole('Ressource Humaine', 'Super Admin')) {
