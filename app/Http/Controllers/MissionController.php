@@ -86,8 +86,7 @@ class MissionController extends Controller
 
                 // Valide toutes les opérations dans la transaction
                 DB::commit();
-                // $person = Mission::with('personnel')->find($mission->id)->first();
-                $person = Personnel::findOrFail($validatedData['personnel_id'])->first();
+                $person = Personnel::findOrFail($validatedData['personnel_id']);
                 $to = $person->email;
                 $fullName = $person->full_name;
                 $date_debut = $validatedData['date_debut'];
